@@ -1,3 +1,39 @@
+(load "Interpreter2.rkt")
+(load "filter.rkt")
+
+;filters out boolean comparator operations
+(define compound
+  (lambda (stmt var val)
+    (cond
+      ((eq? (car stmt) '&&) (and (compound ((cadr stmt) var val)) ((compound (cadr (cdr stmt)) var val))))
+      ((eq? (car stmt) '||) (or  (compound ((cadr stmt) var val)) ((compound (cadr (cdr stmt)) var val))))
+      ((eq? (car stmt) #f) #f)
+      ((eq? (car stmt) #t) #t)
+      (else (simple stmt var val))
+      )
+    )
+  )
+
+;filters out int compator operations
+(define simple
+  (lambda (stmt var val)
+    (cond
+      ((eq? (car stmt) '==) (eq? (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val)))
+      ((eq? (car stmt) '!=) (not (eq? (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val))))
+      ((eq? (car stmt) '>)  (>   (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val)))
+      ((eq? (car stmt) '<)  (<   (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val)))
+      ((eq? (car stmt) '>=) (>=  (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val)))
+      ((eq? (car stmt) '<=) (<=  (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val)))
+      ((eq? (car stmt) '!)  (not (compound (cdr stmt) var val)))
+
+      (else (error '(invalid boolean operation)))
+      )
+    )
+  )
+
+
+      
+
 (define &&
   (lambda (a b)
     (cond

@@ -1,5 +1,5 @@
 (load "Interpreter2.rkt")
-(load "filter.rkt")
+(load "kavan.scm")
 
 ;filters out boolean comparator operations
 (define compound
@@ -18,14 +18,13 @@
 (define simple
   (lambda (stmt var val)
     (cond
-      ((eq? (car stmt) '==) (eq? (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val)))
-      ((eq? (car stmt) '!=) (not (eq? (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val))))
-      ((eq? (car stmt) '>)  (>   (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val)))
-      ((eq? (car stmt) '<)  (<   (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val)))
-      ((eq? (car stmt) '>=) (>=  (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val)))
-      ((eq? (car stmt) '<=) (<=  (trueFalse (cadr stmt) var val) (trueFalse (cadr stmt) var val)))
+      ((eq? (car stmt) '==) (eq? (filter (cadr stmt) var val) (filter (cadr (cdr stmt)) var val)))
+      ((eq? (car stmt) '!=) (not (eq? (filter (cadr stmt) var val) (filter (cadr (cdr stmt)) var val))))
+      ((eq? (car stmt) '>)  (>   (filter (cadr stmt) var val) (filter (cadr (cdr stmt)) var val)))
+      ((eq? (car stmt) '<)  (<   (filter (cadr stmt) var val) (filter (cadr (cdr stmt)) var val)))
+      ((eq? (car stmt) '>=) (>=  (filter (cadr stmt) var val) (filter (cadr (cdr stmt)) var val)))
+      ((eq? (car stmt) '<=) (<=  (filter (cadr stmt) var val) (filter (cadr (cdr stmt)) var val)))
       ((eq? (car stmt) '!)  (not (compound (cdr stmt) var val)))
-
       (else (error '(invalid boolean operation)))
       )
     )

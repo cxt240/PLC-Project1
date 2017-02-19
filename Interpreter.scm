@@ -63,17 +63,18 @@
 (define varFunction
   (lambda (stmt stack)
     (cond
-      ((eq? 'var (car stmt)) (declare (cadr stmt) stack))                   ; variable declaration
+      ((eq? 'var (car stmt)) (declare stmt stack))                   ; variable declaration
       ((eq? '= (car stmt)) (assign (cadr stmt) (cadr (cdr stmt)) stack))    ; assignment operation
       ((eq? 'return (car stmt)) (return stmt stack))                        ; return statment (creates a return variable, which is filtered in hte interpreter
       (else (error '(invalid statement))))))
 
-; Declaring variable (initializes variable to 0)
+; Declaring variable (initializes variable to 0 if undeclared)
 (define declare
-  (lambda (var stack)
+  (lambda (stmt stack)
     (cond
-      ((null? var) (error '(invalid variable)))                           ; no variable declared, throw error
-      (else (list (cons var (car stack)) (cons '0 (cadr stack)))))))      ; add var and init to stack in respective places
+      ((null? (cadr stmt)) (error '(invalid variable)))                           ; no variable declared, throw error
+     ;; (var x a), assign value x to a
+      (else (list (cons (cadr stmt) (car stack)) (cons '0 (cadr stack)))))))      ; add var and init to stack in respective places
 
 ; Assigning a value to a variable given the variable name, the value to be assigned (can be a function), and the stack
 (define assign
@@ -88,14 +89,14 @@
   (lambda (stmt stack)
     (cond
       ((exists? (car stack) 'return) stack)                                         ;if return already exists, do nothing
-      ((assign 'return (identify (cadr stmt) stack) (declare 'return stack))))))    ; initialize a return value and assign the return value
+      ((assign 'return (identify (cadr stmt) stack) (declare '(return) stack))))))    ; initialize a return value and assign the return value
 
 ; interpreter, takes a list of instructions and a blank stack ie '(() ())                                              
 (define instr
   (lambda (l stack)
     (cond
-      ((null? l) '(no return))                                                                  ; no return in instruction
       ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))    ; if there's a return, just return the value, no more computation needed
+      ((null? l) stack)                                                                  ; no return in instruction
       (else (instr (cdr l) (statement (car l) stack))))))                                       ; else execute current instruction and do a recursive call for the next one
 
 ;-------------------------------------------------------------------------------------------------

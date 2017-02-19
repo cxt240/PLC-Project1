@@ -1,6 +1,11 @@
 (load "simpleParser.scm")
 (require racket/trace)
-         
+
+; checks if the given value is an atom. written in class 1-25-17
+(define atom?
+  (lambda (x)
+      (and (not (pair? x)) (not (null? x)))))
+
 ; checks if the variable exists
 (define exists?
   (lambda (l x)
@@ -26,46 +31,63 @@
 
 ; changes the value of the variable in variable stack l given index x
 (define setValue
-  (lambda (l x)
+  (lambda (l val x)
     (cond
-      ((zero? x) (cons x (cdr l)))
+      ((zero? x) (cons val (cdr l)))
       (else (cons (car l) (setValue (cdr l) (- x 1)))))))
 
 
 (define statement
-  (lambda (stmt var val)
+  (lambda (stmt stack)
     (cond
       ((eq? 'while (car stmt)) 'while)
-      ((eq? 'if (car stmt)) 'if)
-      (else (varFunction stmt var val)))))
+      ((eq? 'if (car stmt)) (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack))
+      (else (varFunction stmt stack)))))
 
 (define ifStmt
-  (lambda (tfStmt stmt1 stmt2 var val)
+  (lambda (tfStmt stmt1 stmt2 stack)
     (cond
-      ((compound tfStmt var val) (statement stmt1 var val))
-      (else (statement stmt2 var val)))))
+      ((compound tfStmt stack) (statement stmt1 stack))
+      (else (statement stmt2 stack)))))
 
 ;(define while
- ; (lambda (tfStmt body var val)
+ ; (lambda (tfStmt body stack)
   ;  (cond
-   ;   ((compound tfStmt var val) (while tfStmt body (lambda ((statement body var val))))))));; not complete
+   ;   ((compound tfStmt stack) (while tfStmt body (lambda ((statement body stack))))))));; not complete
  
 
 (define varFunction
-  (lambda (stmt var val)
+  (lambda (stmt stack)
     (cond
-      ((eq? 'var (car stmt)) (declare (cadr stmt) var val))
-      ((eq? '= (car stmt)) (assign (cadr stmt) var val))))) 
+      ((eq? 'var (car stmt)) (declare (cadr stmt) stack))
+      ((eq? '= (car stmt)) (assign (cadr stmt) stack))
+      ((eq? 'return (car stmt)) 'return)
+      (else (error invalid statement)))))
+ 
+(define declare
+  (lambda (var stack)
+    (cond
+      ((null? var) (error invalid variable))
+      (else (list (cons var (car stack)) (cons '0 (car stack)))))))
 
-       
+(define assign
+  (lambda (var val stack)
+    (cond
+      ((exists? (car stack) var) (list (car stack) (setValue (cadr stack) val (getIndex (car stack) var))))
+      (else (error invalid variable)))))
+
+(define return
+  (lambda (stmt stack)
+    (cond
+      ((null? stmt) (error bad statement))
+      ((assign 'return (identify (cadr stmt) stack) (declare 'return stack))))))
+                                              
 (define instr
-  (lambda (l var val)
+  (lambda (l stack)
     (cond
       ((null? l) #f)
-      ((exists? var 'return) (getValue val (getIndex var 'return)))
-      (else (begin
-              (statement (car l) var val)
-              (instr (cdr l) var val))))))
+      ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))
+      (else (instr (cdr l) (statement (car l) stack))))))
 
 ;-------------------------------------------------------------------------------------------------
 ;
@@ -74,26 +96,24 @@
 ;-------------------------------------------------------------------------------------------------
 
 (define identify
-  (lambda (stmt var val)  ; car stmt is op
+  (lambda (stmt stack)  ; car stmt is op
     (cond
-      ( (or (null? stmt) (null? var) (null? val)) '() )
-      (  (eq? '+ (car stmt)) (sum (check (cadr stmt) var val) (check (cadr (cdr stmt)) var val)))    ; + op
-      (  (eq? '- (car stmt)) (diff (check (cadr stmt) var val) (check (cadr (cdr stmt)) var val)))    ; + op
-      (  (eq? '* (car stmt)) (prod (check (cadr stmt) var val) (check (cadr (cdr stmt)) var val)))    ; + op
-      (  (eq? '/ (car stmt)) (div (check (cadr stmt) var val) (check (cadr (cdr stmt)) var val)))    ; + op
-      (  (eq? '% (car stmt)) (% (check (cadr stmt) var val) (check (cadr (cdr stmt)) var val)))    ; + op
-
-    )
-  )
-)
+      ((or (null? stmt)) '() )
+      ((atom? stmt) (check (list stmt) stack)) 
+      ((eq? '+ (car stmt)) (+ (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; + op
+      ((eq? '- (car stmt)) (- (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; - op
+      ((eq? '* (car stmt)) (* (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; * op
+      ((eq? '/ (car stmt)) (/ (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; / op
+      ((eq? '% (car stmt)) (% (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; % op
+    )))
 
 ;checks if the substatement is an atom or not
 (define check
-  (lambda (x var val)
+  (lambda (x stack)
     (cond
-      ((list? x) (identify var val)) ; list, just do another identify call
+      ((list? x) (identify x stack)) ; list, just do another identify call
       ((number? x) x)              ; number, return the number
-      (else (getValue val (getIndex var x))))))   ; else get the value of the variable
+      (else (getValue (cadr stack) (getIndex (car stack) x))))))   ; else get the value of the variable
 
 
 (define %
@@ -113,26 +133,26 @@
 
 ;identifys out boolean comparator operations
 (define compound
-  (lambda (stmt var val)
+  (lambda (stmt stack)
     (cond
-      ((eq? (car stmt) '&&) (and (compound ((cadr stmt) var val)) ((compound (cadr (cdr stmt)) var val))))
-      ((eq? (car stmt) '||) (or  (compound ((cadr stmt) var val)) ((compound (cadr (cdr stmt)) var val))))
+      ((eq? (car stmt) '&&) (and (compound ((cadr stmt) stack)) ((compound (cadr (cdr stmt)) stack))))
+      ((eq? (car stmt) '||) (or  (compound ((cadr stmt) stack)) ((compound (cadr (cdr stmt)) stack))))
       ((eq? (car stmt) #f) #f)
       ((eq? (car stmt) #t) #t)
-      (else (simple stmt var val))
+      (else (simple stmt stack))
       )
     )
   )
 
 ;identifys out int compator operations
 (define simple
-  (lambda (stmt var val)
+  (lambda (stmt stack)
     (cond
-      ((eq? (car stmt) '==) (eq? (identify (cadr stmt) var val) (identify (cadr (cdr stmt)) var val)))
-      ((eq? (car stmt) '!=) (not (eq? (identify (cadr stmt) var val) (identify (cadr (cdr stmt)) var val))))
-      ((eq? (car stmt) '>)  (>   (identify (cadr stmt) var val) (identify (cadr (cdr stmt)) var val)))
-      ((eq? (car stmt) '<)  (<   (identify (cadr stmt) var val) (identify (cadr (cdr stmt)) var val)))
-      ((eq? (car stmt) '>=) (>=  (identify (cadr stmt) var val) (identify (cadr (cdr stmt)) var val)))
-      ((eq? (car stmt) '<=) (<=  (identify (cadr stmt) var val) (identify (cadr (cdr stmt)) var val)))
-      ((eq? (car stmt) '!)  (not (compound (cdr stmt) var val)))
+      ((eq? (car stmt) '==) (eq? (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack)))
+      ((eq? (car stmt) '!=) (not (eq? (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack))))
+      ((eq? (car stmt) '>)  (>   (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack)))
+      ((eq? (car stmt) '<)  (<   (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack)))
+      ((eq? (car stmt) '>=) (>=  (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack)))
+      ((eq? (car stmt) '<=) (<=  (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack)))
+      ((eq? (car stmt) '!)  (not (compound (cdr stmt) stack)))
       (else (error '(invalid boolean operation))))))

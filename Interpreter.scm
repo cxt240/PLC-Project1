@@ -50,10 +50,11 @@
       ((compound tfStmt stack) (statement stmt1 stack))
       (else (statement stmt2 stack)))))
 
-;(define while
- ; (lambda (tfStmt body stack)
-  ;  (cond
-   ;   ((compound tfStmt stack) (while tfStmt body (lambda ((statement body stack))))))));; not complete
+(define while
+  (lambda (tfStmt body stack)
+    (cond
+      ((compound tfStmt stack) (while tfStmt body (statement body stack))) ;if the loop condition is true, execute the body statement
+      (else stack))))   ; otherwise return the stack
  
 
 (define varFunction
@@ -136,8 +137,8 @@
 (define compound
   (lambda (stmt stack)
     (cond
-      ((eq? (car stmt) '&&) (and (compound ((cadr stmt) stack)) ((compound (cadr (cdr stmt)) stack))))
-      ((eq? (car stmt) '||) (or  (compound ((cadr stmt) stack)) ((compound (cadr (cdr stmt)) stack))))
+      ((eq? (car stmt) '&&) (and (compound (cadr stmt) stack) (compound (cadr (cdr stmt)) stack)))
+      ((eq? (car stmt) '||) (or  (compound (cadr stmt) stack) (compound (cadr (cdr stmt)) stack)))
       ((eq? (car stmt) #f) #f)
       ((eq? (car stmt) #t) #t)
       (else (simple stmt stack))
@@ -155,5 +156,5 @@
       ((eq? (car stmt) '<)  (<   (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack)))
       ((eq? (car stmt) '>=) (>=  (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack)))
       ((eq? (car stmt) '<=) (<=  (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack)))
-      ((eq? (car stmt) '!)  (not (compound (cdr stmt) stack)))
+      ((eq? (car stmt) '!)  (not (compound (cadr stmt) stack)))
       (else (error '(invalid boolean operation))))))

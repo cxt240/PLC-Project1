@@ -60,7 +60,7 @@
   (lambda (stmt stack)
     (cond
       ((eq? 'var (car stmt)) (declare (cadr stmt) stack))
-      ((eq? '= (car stmt)) (assign (cadr stmt) stack))
+      ((eq? '= (car stmt)) (assign (cadr stmt) (cadr (cdr stmt)) stack))
       ((eq? 'return (car stmt)) 'return)
       (else (error invalid statement)))))
  
@@ -68,11 +68,12 @@
   (lambda (var stack)
     (cond
       ((null? var) (error invalid variable))
-      (else (list (cons var (car stack)) (cons '0 (car stack)))))))
+      (else (list (cons var (car stack)) (cons '0 (cadr stack)))))))
 
 (define assign
   (lambda (var val stack)
     (cond
+      ((list? val) (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))
       ((exists? (car stack) var) (list (car stack) (setValue (cadr stack) val (getIndex (car stack) var))))
       (else (error invalid variable)))))
 
@@ -99,7 +100,7 @@
   (lambda (stmt stack)  ; car stmt is op
     (cond
       ((or (null? stmt)) '() )
-      ((atom? stmt) (check (list stmt) stack)) 
+      ((atom? stmt) (check stmt stack)) 
       ((eq? '+ (car stmt)) (+ (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; + op
       ((eq? '- (car stmt)) (- (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; - op
       ((eq? '* (car stmt)) (* (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; * op

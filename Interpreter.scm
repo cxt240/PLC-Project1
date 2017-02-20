@@ -94,7 +94,7 @@
     (cond
       ((exists? (car stack) 'return) stack)                                         ;if return already exists, do nothing
       ((assign 'return (if (eq? (identify (cadr stmt) stack) #t) 'true
-                           (if (eq? (identify (cadr stmt) stack) #f) 'false (identify (cadr stmt))))
+                           (if (eq? (identify (cadr stmt) stack) #f) 'false (identify (cadr stmt) stack)))
                (declare '(var return) stack))))))    ; initialize a return value and assign the return value
 
 ; interpreter, takes a list of instructions and a blank stack ie '(() ())                                              
@@ -172,11 +172,11 @@
 (define compound
   (lambda (stmt stack)
     (cond
+      ((eq? (car stmt) #f) #f)
+      ((eq? (car stmt) #t) #t)
       ((atom? stmt) (getValue (cadr stack) (getIndex (car stack) stmt)))
       ((eq? (car stmt) '&&) (and (compound (cadr stmt) stack) (compound (cadr (cdr stmt)) stack)))
       ((eq? (car stmt) '||) (or  (compound (cadr stmt) stack) (compound (cadr (cdr stmt)) stack)))
-      ((eq? (car stmt) #f) #f)
-      ((eq? (car stmt) #t) #t)
       (else (simple stmt stack)))))
 
 ;identifys out int compator operations

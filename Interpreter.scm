@@ -1,3 +1,10 @@
+;-----------------------------------------------------------------------------------------------------
+;
+; EECS 345 Project 1
+; Group Memebers: Chris Tsuei, Kavan Mally, Andrew Su
+;
+;-----------------------------------------------------------------------------------------------------
+
 (load "simpleParser.scm")
 (require racket/trace)
 
@@ -129,7 +136,7 @@
       ((atom? stmt) (check stmt stack)) 
       ((eq? '+ (car stmt)) (+ (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; + op
       ((eq? '- (car stmt)) (- (if (eq? 2 (length stmt)) 0 (check (cadr stmt) stack))
-                              (if (eq? 2 (length stmt)) (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack))))     ; - op (or i guess negative sign)
+                              (if (eq? 2 (length stmt)) (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack))))            ; - op (or i guess negative sign)
       ((eq? '* (car stmt)) (* (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; * op
       ((eq? '/ (car stmt)) (/ (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; / op
       ((eq? '% (car stmt)) (% (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; % op

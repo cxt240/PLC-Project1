@@ -77,7 +77,7 @@
       ((eq? 'var (car stmt)) (declare stmt stack))                          ; variable declaration
       ((eq? '= (car stmt)) (assign (cadr stmt) (cadr (cdr stmt)) stack))    ; assignment operation
       ((eq? 'return (car stmt)) (return stmt stack))                        ; return statment (creates a return variable, which is filtered in hte interpreter
-      (else (error '(invalid statement))))))
+      (else (error "invalid statement")))))
 
 ; Declaring variable (initializes variable to 0 if undeclared)
 (define declare

@@ -33,8 +33,8 @@
 (define setValue
   (lambda (l val x)
     (cond
-      ((zero? x) (cons val (cdr l)))
-      (else (cons (car l) (setValue (cdr l) val (- x 1)))))))
+      ((zero? x) (cons val (cdr l)))                                ; index zero, change variable here
+      (else (cons (car l) (setValue (cdr l) val (- x 1)))))))       ; recursive call so that you reach index 0
 
 ; basic filter for instructions, filters out while and if statements, otherwise fowarded to varFunction
 (define statement
@@ -76,14 +76,15 @@
 (define declare
   (lambda (stmt stack)
     (cond
-      ((eq? 3 (length stmt)) (assign (cadr stmt) (cadr (cdr stmt)) (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))
-      (else (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))))      ; add var and init to stack in respective places
+      ((exists? (car stack) (cadr stmt)) (error "Redefining"))              ; variable has already been declared
+      ((eq? 3 (length stmt)) (assign (cadr stmt) (cadr (cdr stmt)) (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack))))) ; variable with a value declaration
+      (else (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))))                      ; add var and init to stack in respective places
 
 ; Assigning a value to a variable given the variable name, the value to be assigned (can be a function), and the stack
 (define assign
   (lambda (var val stack)
     (cond
-      ((not (exists? (car stack) var)) (error "Using before declaring"))
+      ((not (exists? (car stack) var)) (error "Using before declaring"))          ; variable does not exists
       ((list? val) (if (bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var)))
        (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))))    ; if the assignment is to be a function, find the value of the function before changing the value
       ((exists? (car stack) var) (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))       ; otherwise assign the value

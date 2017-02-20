@@ -102,6 +102,9 @@
   (lambda (stmt stack)
     (cond
       ((exists? (car stack) 'return) stack)                                         ;if return already exists, do nothing
+      ((list? (cadr stmt)) (if (bool-op (car (cadr stmt)))
+                               (if (compound (cadr stmt) stack) (assign 'return 'true (declare '(var return) stack)) (assign 'return 'false (declare '(var return) stack)))
+                               (assign 'return (identify (cadr stmt) stack) (declare '(var return) stack))))
       ((assign 'return (if (eq? (identify (cadr stmt) stack) #t) 'true
                            (if (eq? (identify (cadr stmt) stack) #f) 'false (identify (cadr stmt) stack)))
                (declare '(var return) stack))))))    ; initialize a return value and assign the return value
@@ -201,4 +204,4 @@
       ((eq? (car stmt) '>=) (>=  (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack)))
       ((eq? (car stmt) '<=) (<=  (identify (cadr stmt) stack) (identify (cadr (cdr stmt)) stack)))
       ((eq? (car stmt) '!)  (not (compound (cadr stmt) stack)))
-      (else (error '(invalid boolean operation))))))
+      (else (error "invalid boolean operation")))))

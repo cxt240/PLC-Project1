@@ -182,6 +182,7 @@
 (define compound
   (lambda (stmt stack)
     (cond
+      ((atom? stmt) (if (eq? stmt 'true) #t (if (eq? stmt 'false) #f)))
       ((eq? (car stmt) #f) #f)
       ((eq? (car stmt) #t) #t)
       ((atom? stmt) (getValue (cadr stack) (getIndex (car stack) stmt)))

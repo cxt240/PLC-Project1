@@ -76,14 +76,15 @@
 (define declare
   (lambda (stmt stack)
     (cond
-      ((eq? 3 (length stmt)) (assign (cadr stmt) (identify (cadr (cdr stmt)) stack) (list (cons (cadr stmt) (car stack)) (cons '0 (cadr stack)))))
+      ((eq? 3 (length stmt)) (assign (cadr stmt) (cadr (cdr stmt)) (list (cons (cadr stmt) (car stack)) (cons '0 (cadr stack)))))
       (else (list (cons (cadr stmt) (car stack)) (cons '0 (cadr stack)))))))      ; add var and init to stack in respective places
 
 ; Assigning a value to a variable given the variable name, the value to be assigned (can be a function), and the stack
 (define assign
   (lambda (var val stack)
     (cond
-      ((list? val) (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))    ; if the assignment is to be a function, find the value of the function before changing the value
+      ((list? val) (if (bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var)))
+       (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))))    ; if the assignment is to be a function, find the value of the function before changing the value
       ((exists? (car stack) var) (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))       ; otherwise assign the value
       (else (error '(invalid variable))))))                                                                       ; else throw an error     
 
@@ -92,7 +93,9 @@
   (lambda (stmt stack)
     (cond
       ((exists? (car stack) 'return) stack)                                         ;if return already exists, do nothing
-      ((assign 'return (identify (cadr stmt) stack) (declare '(var return) stack))))))    ; initialize a return value and assign the return value
+      ((assign 'return (if (eq? (identify (cadr stmt) stack) #t) 'true
+                           (if (eq? (identify (cadr stmt) stack) #f) 'false (identify (cadr stmt))))
+               (declare '(var return) stack))))))    ; initialize a return value and assign the return value
 
 ; interpreter, takes a list of instructions and a blank stack ie '(() ())                                              
 (define instr
@@ -108,25 +111,36 @@
 ;
 ;-------------------------------------------------------------------------------------------------
 
+; valid operator checker (for return statement) from the class notes
+(define valid-op
+  (lambda (op)
+    (or (eq? op '+)
+        (eq? op '-)
+        (eq? op '*)
+        (eq? op '/)
+        (eq? op '%))))
+
 (define identify
   (lambda (stmt stack)  ; car stmt is op
     (cond
       ((or (null? stmt)) '() )
       ((atom? stmt) (check stmt stack)) 
       ((eq? '+ (car stmt)) (+ (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; + op
-      ((eq? '- (car stmt)) (- (if (eq? 2 (length stmt)) 0 (check (cadr stmt)) stack)
+      ((eq? '- (car stmt)) (- (if (eq? 2 (length stmt)) 0 (check (cadr stmt) stack))
                               (if (eq? 2 (length stmt)) (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack))))     ; - op (or i guess negative sign)
       ((eq? '* (car stmt)) (* (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; * op
       ((eq? '/ (car stmt)) (/ (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; / op
       ((eq? '% (car stmt)) (% (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; % op
-    )))
+      )))
 
 ;checks if the substatement is an atom or not
 (define check
   (lambda (x stack)
     (cond
       ((list? x) (identify x stack)) ; list, just do another identify call
-      ((number? x) x)              ; number, return the number
+      ((number? x) x); number, return the number
+      ((eq? 'false x) 'false)
+      ((eq? 'true x) 'true)
       (else (getValue (cadr stack) (getIndex (car stack) x))))))   ; else get the value of the variable
 
 
@@ -134,10 +148,7 @@
   (lambda (a b)
     (cond
       ( (or (null? a) (null? b))   '())
-      (else (modulo a b) )
-    )    
-  )
-)
+      (else (modulo a b)))))
 
 ;--------------------------------------------------------------------------------------------
 ;
@@ -145,18 +156,28 @@
 ;
 ;--------------------------------------------------------------------------------------------
 
+(define bool-op
+  (lambda (op)
+    (or (eq? op '&&)
+        (eq? op '||)
+        (eq? op '==)
+        (eq? op '!=)
+        (eq? op '>)
+        (eq? op '>=)
+        (eq? op '<)
+        (eq? op '<=)
+        (eq? op '!))))
+
 ;identifys out boolean comparator operations
 (define compound
   (lambda (stmt stack)
     (cond
+      ((atom? stmt) (getValue (cadr stack) (getIndex (car stack) stmt)))
       ((eq? (car stmt) '&&) (and (compound (cadr stmt) stack) (compound (cadr (cdr stmt)) stack)))
       ((eq? (car stmt) '||) (or  (compound (cadr stmt) stack) (compound (cadr (cdr stmt)) stack)))
       ((eq? (car stmt) #f) #f)
       ((eq? (car stmt) #t) #t)
-      (else (simple stmt stack))
-      )
-    )
-  )
+      (else (simple stmt stack)))))
 
 ;identifys out int compator operations
 (define simple

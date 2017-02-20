@@ -34,14 +34,17 @@
   (lambda (l val x)
     (cond
       ((zero? x) (cons val (cdr l)))
-      (else (cons (car l) (setValue (cdr l) (- x 1)))))))
+      (else (cons (car l) (setValue (cdr l) val (- x 1)))))))
 
 ; basic filter for instructions, filters out while and if statements, otherwise fowarded to varFunction
 (define statement
   (lambda (stmt stack)
     (cond
+      ((null? stmt) stack)
       ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                        ; while function call
-      ((eq? 'if (car stmt)) (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack))  ; if function call
+      ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
+                                (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack)  ; if-then-else function call
+                                (ifStmt (cadr stmt) (cadr (cdr stmt)) '() stack)))  ; if-then function call
       (else (varFunction stmt stack)))))                                                           ; send to varFunction
 
 ; if function that takes the condition, the then and else statements and a stack
@@ -49,6 +52,7 @@
   (lambda (tfStmt stmt1 stmt2 stack)
     (cond
       ((compound tfStmt stack) (statement stmt1 stack)) ; condition true, execute stmt1
+      ((null? stmt2) stack)                             ; is there a statment 2, if not, return the stack
       (else (statement stmt2 stack)))))                 ; condition false, execute stmt 2
 
 ; while function that takes the condition, the body of the loop and the stack
@@ -72,8 +76,7 @@
 (define declare
   (lambda (stmt stack)
     (cond
-      ((null? (cadr stmt)) (error '(invalid variable)))                           ; no variable declared, throw error
-     ;; (var x a), assign value x to a
+      ((eq? 3 (length stmt)) (assign (cadr stmt) (identify (cadr (cdr stmt)) stack) (list (cons (cadr stmt) (car stack)) (cons '0 (cadr stack)))))
       (else (list (cons (cadr stmt) (car stack)) (cons '0 (cadr stack)))))))      ; add var and init to stack in respective places
 
 ; Assigning a value to a variable given the variable name, the value to be assigned (can be a function), and the stack
@@ -81,7 +84,7 @@
   (lambda (var val stack)
     (cond
       ((list? val) (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))    ; if the assignment is to be a function, find the value of the function before changing the value
-      ((exists? (car stack) var) (list (car stack) (setValue (cadr stack) val (getIndex (car stack) var))))       ; otherwise assign the value
+      ((exists? (car stack) var) (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))       ; otherwise assign the value
       (else (error '(invalid variable))))))                                                                       ; else throw an error     
 
 ; return function, creates a variable called return
@@ -89,7 +92,7 @@
   (lambda (stmt stack)
     (cond
       ((exists? (car stack) 'return) stack)                                         ;if return already exists, do nothing
-      ((assign 'return (identify (cadr stmt) stack) (declare '(return) stack))))))    ; initialize a return value and assign the return value
+      ((assign 'return (identify (cadr stmt) stack) (declare '(var return) stack))))))    ; initialize a return value and assign the return value
 
 ; interpreter, takes a list of instructions and a blank stack ie '(() ())                                              
 (define instr
@@ -110,11 +113,12 @@
     (cond
       ((or (null? stmt)) '() )
       ((atom? stmt) (check stmt stack)) 
-      ((eq? '+ (car stmt)) (+ (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; + op
-      ((eq? '- (car stmt)) (- (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; - op
-      ((eq? '* (car stmt)) (* (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; * op
-      ((eq? '/ (car stmt)) (/ (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; / op
-      ((eq? '% (car stmt)) (% (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack)))    ; % op
+      ((eq? '+ (car stmt)) (+ (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; + op
+      ((eq? '- (car stmt)) (- (if (eq? 2 (length stmt)) 0 (check (cadr stmt)) stack)
+                              (if (eq? 2 (length stmt)) (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack))))     ; - op (or i guess negative sign)
+      ((eq? '* (car stmt)) (* (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; * op
+      ((eq? '/ (car stmt)) (/ (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; / op
+      ((eq? '% (car stmt)) (% (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; % op
     )))
 
 ;checks if the substatement is an atom or not

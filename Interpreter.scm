@@ -10,24 +10,24 @@
 (define exists?
   (lambda (l x)
     (cond
-      ((null? l) #f)
-      ((eq? (car l) x) #t)
-      (else (exists? (cdr l) x)))))
+      ((null? l) #f)               ; nothing left in list, so the variable does not exist
+      ((eq? (car l) x) #t)         ; variable is in the list, return true
+      (else (exists? (cdr l) x))))); recursive call to next element
 
 ; gets the index of the corresponding value
 (define getIndex
   (lambda (l x)
     (cond
-      ((null? l) (error "Using before declaring"))
-      ((eq? (car l) x) 0)
-      (else (+ 1 (getIndex (cdr l) x))))))
+      ((null? l) (error "Using before declaring")) ; nothing left in list, throw error
+      ((eq? (car l) x) 0)                          ; found variable, return zero and allow recursive add
+      (else (+ 1 (getIndex (cdr l) x))))))         ; recursive call to cdr of list
 
 ; gets the value of the variable at index x
 (define getValue
   (lambda (l x)
     (cond
-      ((zero? x) (car l))
-      (else (getValue (cdr l) (- x 1))))))
+      ((zero? x) (if (eq? 'null (car l)) (error "Using before assigning") (car l)))  ; if index is zero, return the character
+      (else (getValue (cdr l) (- x 1))))))                                           ; recursive call with index - 1 and cdr of list
 
 ; changes the value of the variable in variable stack l given index x
 (define setValue
@@ -41,11 +41,11 @@
   (lambda (stmt stack)
     (cond
       ((null? stmt) stack)
-      ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                        ; while function call
+      ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                           ; while function call
       ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
                                 (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack)  ; if-then-else function call
-                                (ifStmt (cadr stmt) (cadr (cdr stmt)) '() stack)))  ; if-then function call
-      (else (varFunction stmt stack)))))                                                           ; send to varFunction
+                                (ifStmt (cadr stmt) (cadr (cdr stmt)) '() stack)))                    ; if-then function call
+      (else (varFunction stmt stack)))))                                                              ; send to varFunction
 
 ; if function that takes the condition, the then and else statements and a stack
 (define ifStmt
@@ -67,7 +67,7 @@
 (define varFunction
   (lambda (stmt stack)
     (cond
-      ((eq? 'var (car stmt)) (declare stmt stack))                   ; variable declaration
+      ((eq? 'var (car stmt)) (declare stmt stack))                          ; variable declaration
       ((eq? '= (car stmt)) (assign (cadr stmt) (cadr (cdr stmt)) stack))    ; assignment operation
       ((eq? 'return (car stmt)) (return stmt stack))                        ; return statment (creates a return variable, which is filtered in hte interpreter
       (else (error '(invalid statement))))))
@@ -144,7 +144,7 @@
       ((eq? 'true x) 'true)
       (else (getValue (cadr stack) (getIndex (car stack) x))))))   ; else get the value of the variable
 
-
+; Modulus operator
 (define %
   (lambda (a b)
     (cond
@@ -157,6 +157,7 @@
 ;
 ;--------------------------------------------------------------------------------------------
 
+; Checks for a boolean (true / false) operation
 (define bool-op
   (lambda (op)
     (or (eq? op '&&)

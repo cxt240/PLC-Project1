@@ -55,26 +55,24 @@
 ;
 ; ---------------------------------------------------------------------------------------------------
 
-; adds a layer to both the variable and value stacks
 (define layer
   (lambda (l)
     (cond
-      (else (list (cons 'layer (car l)) (cons 'layer (cadr l))))))) ; only section: adds a layer to both parts of the stack
+      (else (list (cons 'layer (car l)) (cons 'layer (cadr l)))))))
 
-; removes x values from a list
 (define removeX
   (lambda (l x)
     (cond
-      ((null? l) '())                      ; nothing left, return empty list
-      ((zero? x) (cdr l))                  ; x is zero, return the cdr (current value is layer)
-      (else (removeX (cdr l) (- x 1))))))  ; 
+      ((null? l) '())
+      ((zero? x) (cdr l))
+      (else (removeX (cdr l) (- x 1))))))
 
-; pops the topmost layer value from each stack
 (define popLayer
   (lambda (l)
     (cond
-      ((zero? (getIndex (car l) 'layer)) (list (cdr (car l)) (cdr (cadr l))))                     ; layer is the topmost layer, remove top layer
-      (else (list (removeX (car l) (getIndex (car l) 'layer)) (removeX (cadr l) (getIndex (car l) 'layer))))))) ; else search for index of layer and call removeX function
+      ((atom? l) l)
+      ((zero? (getIndex (car l) 'layer)) (list (cdr (car l)) (cdr (cadr l))))
+      (else (list (removeX (car l) (getIndex (car l) 'layer)) (removeX (cadr l) (getIndex (car l) 'layer)))))))
 
 ; ---------------------------------------------------------------------------------------------------
 ;
@@ -94,6 +92,7 @@
 (define while
   (lambda (tfStmt body stack)
     (cond
+      ((atom? stack) stack)
       ((compound tfStmt stack) (while tfStmt body (statement body stack))) ; if the loop condition is true, execute the body statement
       (else stack))))                                                      ; otherwise return the stack
 
@@ -151,11 +150,8 @@
 (define begin
   (lambda (body stack)
     (cond
-      ((null? body) (statement body stack))
-      (else stack)
-    )
-  )
-)
+      ((atom? stack) stack)
+      (else (popLayer (instr body (layer stack)))))))
 
 
 ; ------------------------------------------------------------------------------------------------------------
@@ -168,6 +164,7 @@
 (define instr
   (lambda (l stack)
     (cond
+      ((atom? stack) stack)
       ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))    ; if there's a return, just return the value, no more computation needed
       ((null? l) stack)                                                                  ; no return in instruction
       (else (instr (cdr l) (statement (car l) stack))))))             -                          ; else execute current instruction and do a recursive call for the next one

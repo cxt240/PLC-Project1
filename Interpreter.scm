@@ -78,7 +78,6 @@
   (lambda (body stack)
     (cond
       ((null? body) (statement body stack))
-      ;((null? body) '5)
       (else stack)
     )
   )

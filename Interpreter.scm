@@ -8,6 +8,12 @@
 (load "simpleParser.scm")
 (require racket/trace)
 
+; ----------------------------------------------------------------------------------------------------
+;
+; Stack operations
+;
+; ----------------------------------------------------------------------------------------------------
+
 ; checks if the given value is an atom. written in class 1-25-17
 (define atom?
   (lambda (x)
@@ -43,21 +49,12 @@
       ((zero? x) (cons val (cdr l)))                                ; index zero, change variable here
       (else (cons (car l) (setValue (cdr l) val (- x 1)))))))       ; recursive call so that you reach index 0
 
-; basic filter for instructions, filters out while and if statements, otherwise fowarded to varFunction
-(define statement
-  (lambda (stmt stack)
-    (cond
-      ((null? stmt) stack)
-      ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                           ; while function call
-      ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
-                                (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack)  ; if-then-else function call
-                                (ifStmt (cadr stmt) (cadr (cdr stmt)) '() stack)))                    ; if-then function call
-      ;add begin cond
-      ((eq? 'begin (car stmt)) (begin (cdr stmt) stack) )
-      ;add try cond
-      ;( (eq? 'try (car stmt)) () )
-      (else (varFunction stmt stack)))))                                                              ; send to varFunction
-(trace statement)
+; ---------------------------------------------------------------------------------------------------
+;
+; anything requiring a boolean operation to run
+;
+; ---------------------------------------------------------------------------------------------------
+
 ; if function that takes the condition, the then and else statements and a stack
 (define ifStmt
   (lambda (tfStmt stmt1 stmt2 stack)
@@ -73,17 +70,11 @@
       ((compound tfStmt stack) (while tfStmt body (statement body stack))) ; if the loop condition is true, execute the body statement
       (else stack))))                                                      ; otherwise return the stack
 
-; handles bracket blocks by running each op in block until null
-(define begin
-  (lambda (body stack)
-    (cond
-      ((null? body) (statement body stack))
-      (else stack)
-    )
-  )
-)
-(trace begin)
-
+; -------------------------------------------------------------------------------------------
+;
+; Variable declaration and assignment
+;
+;--------------------------------------------------------------------------------------------
 ; assign, declare and return filter, otherwise the statement is invalid
 (define varFunction
   (lambda (stmt stack)
@@ -111,6 +102,12 @@
       ((exists? (car stack) var) (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))       ; otherwise assign the value
       (else (error '(invalid variable))))))                                                                       ; else throw an error     
 
+; ------------------------------------------------------------------------------------------------------------
+;
+; goto functions
+;
+; ------------------------------------------------------------------------------------------------------------
+
 ; return function, creates a variable called return
 (define return
   (lambda (stmt stack)
@@ -123,14 +120,46 @@
                            (if (eq? (identify (cadr stmt) stack) #f) 'false (identify (cadr stmt) stack)))
                (declare '(var return) stack))))))    ; initialize a return value and assign the return value
 
+; handles bracket blocks by running each op in block until null
+(define begin
+  (lambda (body stack)
+    (cond
+      ((null? body) (statement body stack))
+      (else stack)
+    )
+  )
+)
+
+
+; ------------------------------------------------------------------------------------------------------------
+;
+; Main interpreter
+;
+; ------------------------------------------------------------------------------------------------------------
+
 ; interpreter, takes a list of instructions and a blank stack ie '(() ())                                              
 (define instr
   (lambda (l stack)
     (cond
       ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))    ; if there's a return, just return the value, no more computation needed
       ((null? l) stack)                                                                  ; no return in instruction
-      (else (instr (cdr l) (statement (car l) stack))))))                                       ; else execute current instruction and do a recursive call for the next one
-(trace instr)
+      (else (instr (cdr l) (statement (car l) stack))))))             -                          ; else execute current instruction and do a recursive call for the next one
+
+; basic filter for instructions, filters out while and if statements, otherwise fowarded to varFunction
+(define statement
+  (lambda (stmt stack)
+    (cond
+      ((null? stmt) stack)
+      ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                           ; while function call
+      ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
+                                (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack)  ; if-then-else function call
+                                (ifStmt (cadr stmt) (cadr (cdr stmt)) '() stack)))                    ; if-then function call
+      ;add begin cond
+      ((eq? 'begin (car stmt)) (begin (cdr stmt) stack) )
+      ;add try cond
+      ;( (eq? 'try (car stmt)) () )
+      (else (varFunction stmt stack)))))                                                              ; send to varFunction
+
 ;-------------------------------------------------------------------------------------------------
 ;
 ; Arithmetic Functions (written by Kavan)
@@ -157,7 +186,7 @@
                               (if (eq? 2 (length stmt)) (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack))))            ; - op (or i guess negative sign)
       ((eq? '* (car stmt)) (* (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; * op
       ((eq? '/ (car stmt)) (/ (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; / op
-      ((eq? '% (car stmt)) (% (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; % op
+      ((eq? '% (car stmt)) (modulo (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))    ; % op
       )))
 
 ;checks if the substatement is an atom or not
@@ -169,13 +198,6 @@
       ((eq? 'false x) 'false)
       ((eq? 'true x) 'true)
       (else (getValue (cadr stack) (getIndex (car stack) x))))))   ; else get the value of the variable
-
-; Modulus operator
-(define %
-  (lambda (a b)
-    (cond
-      ( (or (null? a) (null? b))   '())
-      (else (modulo a b)))))
 
 ;--------------------------------------------------------------------------------------------
 ;

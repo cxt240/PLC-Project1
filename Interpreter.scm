@@ -51,6 +51,30 @@
 
 ; ---------------------------------------------------------------------------------------------------
 ;
+; layer operations
+;
+; ---------------------------------------------------------------------------------------------------
+
+(define layer
+  (lambda (l)
+    (cond
+      (else (list (cons 'layer (car l)) (cons 'layer (cadr l)))))))
+
+(define removeX
+  (lambda (l x)
+    (cond
+      ((null? l) '())
+      ((zero? x) (cdr l))
+      (else (removeX (cdr l) (- x 1))))))
+
+(define popLayer
+  (lambda (l)
+    (cond
+      ((zero? (getIndex (car l) 'layer)) (list (cdr (car l)) (cdr (cadr l))))
+      (else (list (removeX (car l) (getIndex (car l) 'layer)) (removeX (cadr l) (getIndex (car l) 'layer)))))))
+
+; ---------------------------------------------------------------------------------------------------
+;
 ; anything requiring a boolean operation to run
 ;
 ; ---------------------------------------------------------------------------------------------------

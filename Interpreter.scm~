@@ -52,12 +52,8 @@
       ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
                                 (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack)  ; if-then-else function call
                                 (ifStmt (cadr stmt) (cadr (cdr stmt)) '() stack)))                    ; if-then function call
-      ;add begin cond
-      ((eq? 'begin (car stmt)) (begin (cdr stmt) stack) )
-      ;add try cond
-      ;( (eq? 'try (car stmt)) () )
       (else (varFunction stmt stack)))))                                                              ; send to varFunction
-(trace statement)
+
 ; if function that takes the condition, the then and else statements and a stack
 (define ifStmt
   (lambda (tfStmt stmt1 stmt2 stack)
@@ -72,18 +68,7 @@
     (cond
       ((compound tfStmt stack) (while tfStmt body (statement body stack))) ; if the loop condition is true, execute the body statement
       (else stack))))                                                      ; otherwise return the stack
-
-; handles bracket blocks by running each op in block until null
-(define begin
-  (lambda (body stack)
-    (cond
-      ((null? body) (statement body stack))
-      ;((null? body) '5)
-      (else stack)
-    )
-  )
-)
-(trace begin)
+ 
 
 ; assign, declare and return filter, otherwise the statement is invalid
 (define varFunction
@@ -131,7 +116,7 @@
       ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))    ; if there's a return, just return the value, no more computation needed
       ((null? l) stack)                                                                  ; no return in instruction
       (else (instr (cdr l) (statement (car l) stack))))))                                       ; else execute current instruction and do a recursive call for the next one
-(trace instr)
+
 ;-------------------------------------------------------------------------------------------------
 ;
 ; Arithmetic Functions (written by Kavan)
@@ -147,7 +132,6 @@
         (eq? op '/)
         (eq? op '%))))
 
-;runs arithmetic operation based on sign
 (define identify
   (lambda (stmt stack)  ; car stmt is op
     (cond

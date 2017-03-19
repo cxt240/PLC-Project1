@@ -55,23 +55,26 @@
 ;
 ; ---------------------------------------------------------------------------------------------------
 
+; adds a layer to both the variable and value stacks
 (define layer
   (lambda (l)
     (cond
-      (else (list (cons 'layer (car l)) (cons 'layer (cadr l)))))))
+      (else (list (cons 'layer (car l)) (cons 'layer (cadr l))))))) ; only section: adds a layer to both parts of the stack
 
+; removes x values from a list
 (define removeX
   (lambda (l x)
     (cond
-      ((null? l) '())
-      ((zero? x) (cdr l))
-      (else (removeX (cdr l) (- x 1))))))
+      ((null? l) '())                      ; nothing left, return empty list
+      ((zero? x) (cdr l))                  ; x is zero, return the cdr (current value is layer)
+      (else (removeX (cdr l) (- x 1))))))  ; 
 
+; pops the topmost layer value from each stack
 (define popLayer
   (lambda (l)
     (cond
-      ((zero? (getIndex (car l) 'layer)) (list (cdr (car l)) (cdr (cadr l))))
-      (else (list (removeX (car l) (getIndex (car l) 'layer)) (removeX (cadr l) (getIndex (car l) 'layer)))))))
+      ((zero? (getIndex (car l) 'layer)) (list (cdr (car l)) (cdr (cadr l))))                     ; layer is the topmost layer, remove top layer
+      (else (list (removeX (car l) (getIndex (car l) 'layer)) (removeX (cadr l) (getIndex (car l) 'layer))))))) ; else search for index of layer and call removeX function
 
 ; ---------------------------------------------------------------------------------------------------
 ;

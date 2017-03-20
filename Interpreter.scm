@@ -183,7 +183,18 @@
 ;
 ; ------------------------------------------------------------------------------------------------------------
 
-; interpreter, takes a list of instructions and a blank stack ie '(() ())                                              
+(define run
+  (lambda (l)
+    (interpreter l (layer '(() ())))))
+
+(define interpreter
+  (lambda (l stack)
+    (cond 
+      ((atom? stack) stack)
+      ((null? l) (error "no return"))
+      (else (interpreter (cdr l) (instr l stack))))))
+
+; main interpreter, takes a list of instructions and a blank stack ie '(() ())                                              
 (define instr
   (lambda (l stack)
     (cond
@@ -192,7 +203,7 @@
       ((eq? 'break (car stack)) stack)
       ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))    ; if there's a return, just return the value, no more computation needed
       ((null? l) stack)                                                                         ; no return in instruction
-      (else (instr (cdr l) (statement (car l) stack))))))             -                         ; else execute current instruction and do a recursive call for the next one
+      (else (instr (cdr l) (statement (car l) stack))))))                                       ; else execute current instruction and do a recursive call for the next one
 
 ; basic filter for instructions, filters out while and if statements, otherwise fowarded to varFunction
 (define statement

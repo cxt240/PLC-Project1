@@ -4,6 +4,6 @@
 
 We are not implementing multiple assigns in this interpreter.
 
-Interpreter is the file containing the compiler. To call the interpreter, given a filename (filename.txt).
+Interpreter is the file containing the compiler. To call the interpreter, given a filename (filename.txt), call the function named run like this:
 
-(instr (parser "filename.txt") '(() ()))
+(run (parser "filename.txt"))

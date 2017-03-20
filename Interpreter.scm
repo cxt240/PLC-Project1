@@ -81,6 +81,7 @@
   (lambda (l)
     (cond
       ((atom? l) l)                                            ; if l atom return
+      ((atom? (car l)) (cons (car l) (popLayer (cdr l))))
       ((zero? (getIndex (car l) 'layer))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if layer index 0 return list of sublist 1 and 2
       (else (list
@@ -109,6 +110,7 @@
                      (call/cc (lambda (cc)
                                     (cond
                                       ((atom? stack2) stack2)                                                ; if stack atom return atom
+                                      ((eq? 'break (car stack2)) (cc (cdr stack2)))
                                       ((compound tfStmt stack2) (loop tfStmt body (statement body stack2))) ; if the loop condition is true, execute the body statement
                                       (else stack2)))))])                                                    ; otherwise return the stack
       (loop tfStmt body stack))))
@@ -187,6 +189,7 @@
     (cond
       ((atom? stack) stack)
       ((eq? 'continue (car stack)) (cdr stack))
+      ((eq? 'break (car stack)) stack)
       ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))    ; if there's a return, just return the value, no more computation needed
       ((null? l) stack)                                                                         ; no return in instruction
       (else (instr (cdr l) (statement (car l) stack))))))             -                         ; else execute current instruction and do a recursive call for the next one
@@ -198,6 +201,7 @@
       ((null? stmt) stack)                                                                            ; null case
       ((eq? 'throw (car stmt)) (error (cons (cadr stmt)) stack))                                      ; throw call
       ((eq? 'continue (car stmt)) (cons 'continue stack))                                             ; continue call
+      ((eq? 'break (car stmt)) (cons 'break stack))                                                   ; break call
       ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                           ; while function call
       ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
                                 (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack)  ; if-then-else function call

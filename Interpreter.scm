@@ -73,6 +73,7 @@
       (else (removeX (cdr l) (- x 1))))))
 
 ; function removes the most recent layer
+; (popLayer '((x layer y z) (1 layer 2 3))) --> '((y z) (2 3))
 (define popLayer
   (lambda (l)
     (cond

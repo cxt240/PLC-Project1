@@ -7,6 +7,7 @@
 
 ;command issues:
 ;(instr (parser "Test/Test12.txt") '(() ()))
+;(run (parser "Test/Test12.txt"))
 
 (load "simpleParser.scm")
 (require racket/trace)

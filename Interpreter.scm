@@ -154,6 +154,7 @@
                (declare '(var return) stack))))))    ; initialize a return value and assign the return value
 
 ; handles bracket blocks by running each op in block until null
+;@param: body of the loop/block; stack for all variables and values
 (define begin
   (lambda (body stack)
     (cond

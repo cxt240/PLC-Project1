@@ -51,15 +51,17 @@
 
 ; ---------------------------------------------------------------------------------------------------
 ;
-; layer operations
+; layer operations (Chris Tsuei)
 ;
 ; ---------------------------------------------------------------------------------------------------
 
+; function initializes a layer 
 (define layer
   (lambda (l)
     (cond
       (else (list (cons 'layer (car l)) (cons 'layer (cadr l)))))))
 
+; function removes the xth layer 
 (define removeX
   (lambda (l x)
     (cond
@@ -67,6 +69,7 @@
       ((zero? x) (cdr l))
       (else (removeX (cdr l) (- x 1))))))
 
+; function removes the most recent layer
 (define popLayer
   (lambda (l)
     (cond

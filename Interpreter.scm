@@ -112,6 +112,7 @@
                                     (cond
                                       ((atom? stack2) stack2)                                                ; if stack atom return atom
                                       ((eq? 'break (car stack2)) (cc (cdr stack2)))
+                                      ((eq? 'throw (car stack2)) (cc stack2))
                                       ((compound tfStmt stack2) (loop tfStmt body (statement body stack2))) ; if the loop condition is true, execute the body statement
                                       (else stack2)))))])                                                    ; otherwise return the stack
       (loop tfStmt body stack))))
@@ -177,7 +178,35 @@
       ((atom? stack) stack)                                   ; if stack atom return atom
       (else (popLayer (instr body (layer stack)))))))         ; else pop layer
 
+; ------------------------------------------------------------------------------------------------------------
+;
+; Try/catch/finally
+;
+; ------------------------------------------------------------------------------------------------------------
 
+(define tcf
+  (lambda (l stack)
+    (letrec ([try (lambda (body stack1)
+                    (call/cc (lambda (cc)
+                               (cond
+                                 ((null? body) (cc stack1))
+                                 ((atom? (car stack1)) (cc stack1))
+                                 (else (try (cdr body)
+                                            (with-handlers([exn:fail? (lambda (exn) (cc stack1))])
+                                              (statement (car body) stack1))))))))]
+             [catch (lambda (body stack1)
+                      (call/cc (lambda (cc)
+                                 (cond
+                                   ((null? body) (cc stack1))
+                                   ((atom? (car stack1)) (cc (cdr stack1)))
+                                   (else (cc stack1))))))]
+             [finally (lambda (body stack1)
+                        (call/cc (lambda (cc)
+                                   (cond
+                                     ((null? body) (cc stack1))
+                                     ((atom? (car stack1)) (cc stack1))
+                                     (else (cc (instr body stack1)))))))])
+      (finally (cadr (cadr (cdr l))) (try (car l) stack)))))
 ; ------------------------------------------------------------------------------------------------------------
 ;
 ; Main interpreter
@@ -211,17 +240,15 @@
   (lambda (stmt stack)
     (cond
       ((null? stmt) stack)                                                                            ; null case
-      ((eq? 'throw (car stmt)) (error (cons (cadr stmt)) stack))                                      ; throw call
+      ((eq? 'throw (car stmt)) (cons (cadr stmt) stack))                                              ; throw call
       ((eq? 'continue (car stmt)) (cons 'continue stack))                                             ; continue call
       ((eq? 'break (car stmt)) (cons 'break stack))                                                   ; break call
       ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                           ; while function call
       ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
                                 (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack)  ; if-then-else function call
                                 (ifStmt (cadr stmt) (cadr (cdr stmt)) '() stack)))                    ; if-then function call
-      ;add begin cond
-      ((eq? 'begin (car stmt)) (begin (cdr stmt) stack) )
-      ;add try cond                                                                                   ; try call
-      ;( (eq? 'try (car stmt)) () )
+      ((eq? 'begin (car stmt)) (begin (cdr stmt) stack))                                              ; begin
+      ((eq? 'try (car stmt)) (tcf (cdr stmt) stack))                                                  ; try call
       (else (varFunction stmt stack)))))                                                              ; send to varFunction
 
 ;-------------------------------------------------------------------------------------------------

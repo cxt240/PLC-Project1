@@ -54,15 +54,17 @@
 
 ; ---------------------------------------------------------------------------------------------------
 ;
-; layer operations
+; layer operations (Chris Tsuei)
 ;
 ; ---------------------------------------------------------------------------------------------------
 
+; function initializes a layer 
 (define layer
   (lambda (l)
     (cond
       (else (list (cons 'layer (car l)) (cons 'layer (cadr l)))))))
 
+; function removes the xth layer 
 (define removeX
   (lambda (l x)
     (cond
@@ -70,6 +72,7 @@
       ((zero? x) (cdr l))
       (else (removeX (cdr l) (- x 1))))))
 
+; function removes the most recent layer
 (define popLayer
   (lambda (l)
     (cond
@@ -168,6 +171,7 @@
   (lambda (l stack)
     (cond
       ((atom? stack) stack)
+      ((eq? 'continue (car stack)) (cdr stack))
       ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))    ; if there's a return, just return the value, no more computation needed
       ((null? l) stack)                                                                  ; no return in instruction
       (else (instr (cdr l) (statement (car l) stack))))))             -                          ; else execute current instruction and do a recursive call for the next one
@@ -177,6 +181,7 @@
   (lambda (stmt stack)
     (cond
       ((null? stmt) stack)
+      ((eq? 'continue (car stmt)) (cons 'continue stack))
       ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                           ; while function call
       ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
                                 (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack)  ; if-then-else function call

@@ -1,33 +1,70 @@
+;-----------------------------------------------------------------------------------------
+; stack operations
+;-----------------------------------------------------------------------------------------
 
-define atom (x) //check if given value is atom
-define exists (l x) //check if variable exists
-define getIndex (l x) //gets index of corresponding value
-define getValue (l x) //get value of variable at index x
-define setValue (l val x) //changes value of variable in variable stackk l given index x
-define statement (stmt stack) //basic filter for instructions, filters out while and if 		 
-	statements, otherwise forward to varFunction 
-define ifStmt (tfStmt stmt 1 stmt2 stack) //if function that takes condition, the then and else  
-	statments, and a stack
-define while (tfStmt body stack) //while function that takes the condition, the body of the loop, 
-	and the stack
-define varFunction (stmt stack) //assign, declare, and return filter, otherwise the statement is
-	invalid
-define declare (stmt stack) //declaring variable (initializes variable to 0 if undeclared)
-define assign (var val stack) //assigning value to variable given variable name, value to be 	
-	assigned (can be function), and the stack
+define atom (x) 		 	 //check if given value is atom
+define exists (l x)		 	 //check if variable exists
+define getIndex (l x) 	 	 //gets index of corresponding value
+define getValue (l x) 		 //get value of variable at index x
+define setValue (l val x) 	 //changes value of variable in variable stackk l given index x
+
+;-----------------------------------------------------------------------------------------
+; layer operations
+;-----------------------------------------------------------------------------------------
+define layer (l) //function initializes a layer 
+define removeX (l x) //function removes the xth layer 
+define popLayer (l) // function removes the most recent layer
+
+;-----------------------------------------------------------------------------------------
+; operations that require a boolean operation to run
+;-----------------------------------------------------------------------------------------
+define ifStmt (tfStmt stmt 1 stmt2 stack) //function takes if condition, then and else statments, 
+										  //and stack
+
+define while (tfStmt body stack) 		  //while function that takes the condition, the body of 
+									      //the loop, and the stack
+
+;-----------------------------------------------------------------------------------------
+; variable declaration and assignment
+;-----------------------------------------------------------------------------------------
+
+define varFunction (stmt stack) 	//assign, declare, and return filter, otherwise the statement 
+									//is invalid
+
+define declare (stmt stack) 		//declaring variable (initializes variable to 0 if undeclared)
+
+define assign (var val stack) 		//assigning value to variable given variable name, value to 
+									//be assigned (can be function), and the stack
+
+;-----------------------------------------------------------------------------------------
+; goto operations
+;-----------------------------------------------------------------------------------------
 define return (stmt stack) //return function, creates variable called return
+
+define begin (body stack) //handles bracket blocks by running each op in block until null
+
+
+;-----------------------------------------------------------------------------------------
+; main interpreter
+;-----------------------------------------------------------------------------------------
 define instr (l stack) //interpreter, takes a list of instructions and a blackk stack ie '()) ())
 
-define valid-op (op) //valid operator checker (for return statement) from class notes
-define identify (stmt stack) //runs arithmetic operation based on sign
-define check (x stack) //checks if the substatment is an atom or not
-define modulus (a b) //modulus operator
-
-define bool-op (op) //checks for a boolean (true/false) operation
-define compound (stmt stack) //identifies out boolean comparator operations
-define simple (stmt stack) //identifies out int compator operations
+define statement (stmt stack) //basic filter for instructions, filters out while and if 		 
+							  //statements, otherwise forward to varFunction 
 
 
+;-----------------------------------------------------------------------------------------
+; arithmetic operations
+;-----------------------------------------------------------------------------------------
+define valid-op (op) 			//valid operator checker (for return statement) from class notes
+define identify (stmt stack) 	//runs arithmetic operation based on sign
+define check (x stack) 			//checks if the substatment is an atom or not
 
-//part 2
+
+;-----------------------------------------------------------------------------------------
+; boolean operations
+;-----------------------------------------------------------------------------------------
+define bool-op (op) 			//checks for a boolean (true/false) operation
+define compound (stmt stack) 	//identifies out boolean comparator operations
+define simple (stmt stack) 		//identifies out int compator operations
 

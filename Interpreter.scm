@@ -105,10 +105,13 @@
 ; while function that takes the condition, the body of the loop and the stack
 (define while
   (lambda (tfStmt body stack)
-    (cond
-      ((atom? stack) stack)                                                ; if stack atom return atom
-      ((compound tfStmt stack) (while tfStmt body (statement body stack))) ; if the loop condition is true, execute the body statement
-      (else stack))))                                                      ; otherwise return the stack
+    (letrec ([loop (lambda (condition body stack2)
+                     (call/cc (lambda (cc)
+                                    (cond
+                                      ((atom? stack2) stack2)                                                ; if stack atom return atom
+                                      ((compound tfStmt stack2) (loop tfStmt body (statement body stack2))) ; if the loop condition is true, execute the body statement
+                                      (else stack2)))))])                                                    ; otherwise return the stack
+      (loop tfStmt body stack))))
 
 ; -------------------------------------------------------------------------------------------
 ;

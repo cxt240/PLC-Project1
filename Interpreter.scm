@@ -83,6 +83,7 @@
     (cond
       ((atom? l) l)                                            ; if l atom return
       ((atom? (car l)) (cons (car l) (popLayer (cdr l))))
+      ((eq? 'throw (caar l)) (cons (car l) (popLayer (cdr l))))
       ((zero? (getIndex (car l) 'layer))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if layer index 0 return list of sublist 1 and 2
       (else (list
@@ -112,7 +113,7 @@
                                     (cond
                                       ((atom? stack2) stack2)                                                ; if stack atom return atom
                                       ((eq? 'break (car stack2)) (cc (cdr stack2)))
-                          ;            ((eq? 'throw (car stack2)) (cc stack2))
+                                      ((eq? 'throw (car (car stack2))) (cc stack2))
                                       ((compound tfStmt stack2) (loop tfStmt body (statement body stack2))) ; if the loop condition is true, execute the body statement
                                       (else stack2)))))])                                                    ; otherwise return the stack
       (loop tfStmt body stack))))
@@ -226,6 +227,7 @@
     (cond 
       ((atom? stack) stack)
       ((null? l) (error "no return"))
+      ((eq? 'throw (caar stack)) (error "illegal throw"))
       (else (interpreter (cdr l) (instr l stack))))))
 
 ; main interpreter, takes a list of instructions and a blank stack ie '(() ())                                              
@@ -235,6 +237,7 @@
       ((atom? stack) stack)
       ((eq? 'continue (car stack)) (cdr stack))
       ((eq? 'break (car stack)) stack)
+      ((eq? 'throw (caar stack)) stack)
       ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))    ; if there's a return, just return the value, no more computation needed
       ((null? l) stack)                                                                         ; no return in instruction
       (else (instr (cdr l) (statement (car l) stack))))))                                       ; else execute current instruction and do a recursive call for the next one

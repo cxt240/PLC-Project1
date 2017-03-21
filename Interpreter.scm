@@ -207,8 +207,10 @@
                                      ((null? body) (cc stack1))
                                      ((atom? (car stack1)) (cc stack1))
                                      (else (cc (instr body stack1)))))))])
-      (finally (cadr (cadr (cdr l)))
-               (catch (cadr (cdr (cadr l))) (car (cadr (cadr l))) (try (car l) stack))))))
+      (cond
+        ((null? (cadr l)) (finally (cadr (cadr (cdr l))) (try (car l) stack)))
+        (else (finally (if (null? (cadr (cdr l))) '() (cadr (cadr (cdr l))))
+               (catch (cadr (cdr (cadr l))) (car (cadr (cadr l))) (try (car l) stack))))))))
 ; ------------------------------------------------------------------------------------------------------------
 ;
 ; Main interpreter

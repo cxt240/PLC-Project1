@@ -81,9 +81,9 @@
 (define popLayer
   (lambda (l)
     (cond
-      ((atom? l) l)                                            ; if l atom return
+      ((atom? l) l)                                            ; atom ---  if list is an atom, return
       ((atom? (car l)) (cons (car l) (popLayer (cdr l))))
-      ((eq? 'throw (caar l)) (cons (car l) (popLayer (cdr l))))
+      ((eq? 'throw (car l)) (cons (car l) (popLayer (cdr l))))
       ((zero? (getIndex (car l) 'layer))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if layer index 0 return list of sublist 1 and 2
       (else (list

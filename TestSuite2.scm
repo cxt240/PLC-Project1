@@ -61,30 +61,36 @@
 
 
 ;Test15
-(if (check-exn
-          exn:fail?
-          (lambda () (run (parser "Test2/Test15.txt")))) 'Test15_Fail_With_Error
-         (if (not(eq?(run (parser "Test2/Test15.txt")) 125)) 'Test15_Fail))
+(if (check-not-exn
+         (lambda () (run (parser "Test2/Test15.txt")))) 
+         (if (not(eq?(run (parser "Test2/Test15.txt")) 125)) 'Test15_Fail)
+         'Test15_Fail_With_Error) ;else statement
 
 ;Test16
-(if (check-exn
-          exn:fail?
-          (lambda () (run (parser "Test2/Test16.txt")))) 'Test16_Fail_With_Error
-          (if (not(eq?(run (parser "Test2/Test16.txt")) 110)) 'Test16_Fail))
+(if (check-not-exn
+         (lambda () (run (parser "Test2/Test16.txt")))) 
+         (if (not(eq?(run (parser "Test2/Test16.txt")) 110)) 'Test16_Fail)
+         'Test16_Fail_With_Error) ;else statement
+
+(cond
+  ((check-not-exn
+         (lambda () (run (parser "Test2/Test14.txt")))) 'CheckIsTrue)
+  (else 'CheckIsFalse))
+                                                        
+      
 
 ;Test17
-(if (check-exn
-          exn:fail?
-          (lambda () (run (parser "Test2/Test17.txt")))) 'Test17_Fail_With_Error
-          (if (not(eq?(run (parser "Test2/Test17.txt")) 2000400)) 'Test17_Fail))
+(if (check-not-exn
+         (lambda () (run (parser "Test2/Test17.txt"))))
+         (if (not(eq?(run (parser "Test2/Test17.txt")) 2000400)) 'Test17_Fail)
+         'Test17_Fail_With_Error) ;else statement
 
 ;Test18
-(if (check-exn
-          exn:fail?
-          (lambda () (run (parser "Test2/Test18.txt")))) 'Test18_Fail_With_Error
-          (if (not(eq?(run (parser "Test2/Test18.txt")) 101)) 'Test18_Fail))
+(if (check-not-exn
+         (lambda () (run (parser "Test2/Test18.txt"))))
+          (if (not(eq?(run (parser "Test2/Test18.txt")) 101)) 'Test18_Fail)
+           'Test18_Fail_With_Error) ;else statement
 
 ;Test19
-(if (not (check-exn
-          exn:fail?
-          (lambda () (run (parser "Test2/Test19.txt"))))) 'Test19_Fail)
+(if (check-not-exn
+          (lambda () (run (parser "Test2/Test19.txt")))) 'Test19_Fail)

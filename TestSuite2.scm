@@ -92,5 +92,6 @@
            'Test18_Fail_With_Error) ;else statement
 
 ;Test19
-(if (check-not-exn
-          (lambda () (run (parser "Test2/Test19.txt")))) 'Test19_Fail)
+(check-exn
+ exn:fail?
+ (lambda () (run (parser "Test2/Test19.txt"))))

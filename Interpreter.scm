@@ -195,10 +195,10 @@
                                  (else (try (cdr body)
                                             (with-handlers([exn:fail? (lambda (exn) (cc stack1))])
                                               (statement (car body) stack1))))))))]
-             [catch (lambda (body e stack1)
+             [catch (lambda (body x stack1)
                       (call/cc (lambda (cc)
                                  (cond
-                                   ((eq? 'throw (car (car stack))) (begin body (assign e (cadr (car stack1)) (declare (list 'var e) (layer (cdr stack1))))))
+                                   ((eq? 'throw (car (car stack))) (begin body (assign x (cadr (car stack1)) (declare (list 'var x) (layer (cdr stack1))))))
                                    ((null? body) (cc stack1))
                                    (else (cc stack1))))))]
              [finally (lambda (body stack1)
@@ -208,7 +208,7 @@
                                      ((atom? (car stack1)) (cc stack1))
                                      (else (cc (instr body stack1)))))))])
       (finally (cadr (cadr (cdr l)))
-               (catch (cadr (cdr (cadr l))) (try (car l) stack))))))
+               (catch (cadr (cdr (cadr l))) (car (cadr (cadr l))) (try (car l) stack))))))
 ; ------------------------------------------------------------------------------------------------------------
 ;
 ; Main interpreter

@@ -9,7 +9,7 @@ We are not implementing multiple assigns in this interpreter.
 Interpreter is the file containing the compiler.
 To run interpreter given file (filename.txt), call the function run like this:
 
-(run (parser "filename.txt"))
+(interpreter (parser "filename.txt"))
 
 To test all files, just run TestSuite.scm file
 

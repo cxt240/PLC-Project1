@@ -82,8 +82,8 @@
   (lambda (l)
     (cond
       ((atom? l) l)                                            ; atom ---  if list is an atom, return
-      ((atom? (car l)) (cons (car l) (popLayer (cdr l))))
-      ((eq? 'throw (caar l)) (cons (car l) (popLayer (cdr l))))
+      ((atom? (car l)) (cons (car l) (popLayer (cdr l))))      ; break/continue atom, pop the stack
+      ((eq? 'throw (caar l)) (cons (car l) (popLayer (cdr l)))); throw (it's the first list) pop stack
       ((zero? (getIndex (car l) 'layer))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if layer index 0 return list of sublist 1 and 2
       (else (list
@@ -112,9 +112,9 @@
                      (call/cc (lambda (cc)
                                     (cond
                                       ((atom? stack2) stack2)                                                ; if stack atom return atom
-                                      ((eq? 'break (car stack2)) (cc (cdr stack2)))
-                                      ((eq? 'throw (car (car stack2))) (cc stack2))
-                                      ((compound tfStmt stack2) (loop tfStmt body (statement body stack2))) ; if the loop condition is true, execute the body statement
+                                      ((eq? 'break (car stack2)) (cc (cdr stack2)))                          ; break, exit loop (remove break from stack)
+                                      ((eq? 'throw (car (car stack2))) (cc stack2))                          ; throw, exit loop (return stack, including the throw)
+                                      ((compound tfStmt stack2) (loop tfStmt body (statement body stack2)))  ; if the loop condition is true, execute the body statement
                                       (else stack2)))))])                                                    ; otherwise return the stack
       (loop tfStmt body stack))))
 
@@ -166,7 +166,7 @@
       ((list? (cadr stmt)) (if (bool-op (car (cadr stmt)))
         (if (compound (cadr stmt) stack) (assign 'return 'true (declare '(var return) stack))
           (assign 'return 'false (declare '(var return) stack)))
-          (assign 'return (identify (cadr stmt) stack) (declare '(var return) stack))))      ; if 
+          (assign 'return (identify (cadr stmt) stack) (declare '(var return) stack))))      ; true/false return 
       ((assign 'return (if (eq? (identify (cadr stmt) stack) #t) 'true
         (if (eq? (identify (cadr stmt) stack) #f) 'false (identify (cadr stmt) stack)))
           (declare '(var return) stack))))))                                                 ; initialize a return value and assign the return value
@@ -185,59 +185,64 @@
 ;
 ; ------------------------------------------------------------------------------------------------------------
 
+; try catch finally call/cc function
 (define tcf
   (lambda (l stack)
     (letrec ([try (lambda (body stack1)
                     (call/cc (lambda (cc)
                                (cond
-                                 ((null? body) (cc stack1))
-                                 ((atom? (car stack1)) (cc stack1))
-                                 ((eq? 'throw (car (car stack))) (cc stack1))
-                                 (else (try (cdr body)
-                                            (with-handlers([exn:fail? (lambda (exn) (cc stack1))])
-                                              (statement (car body) stack1))))))))]
+                                 ((null? body) (cc stack1))                                         ; no more commands, return stack
+                                 ((atom? (car stack1)) (cc stack1))                                 ; some return value, return stack + value
+                                 ((eq? 'throw (car (car stack))) (cc stack1))                       ; something thrown, return the previous stack + throw message
+                                 (else (try (cdr body)                                              ; main try function
+                                            (with-handlers([exn:fail? (lambda (exn) (cc stack1))])  ; handle exceptions in the next command, (if error in next
+                                              (statement (car body) stack1))))))))]                 ; instruction, return current stack)
              [catch (lambda (body x stack1)
                       (call/cc (lambda (cc)
                                  (cond
-                                   ((eq? 'throw (car (car stack1))) (popLayer (begin body (assign x (cadr (car stack1)) (declare (list 'var x) (layer (cdr stack1)))))))
-                                   ((null? body) (cc stack1))
-                                   (else (cc stack1))))))]
+                                   ((eq? 'throw (car (car stack1)))                                 ; if something was thrown, add a layer, assign the error (e) the thrown value
+                                    (popLayer (begin body                                           ; run catch body on it
+                                                     (assign x (cadr (car stack1)) (declare (list 'var x) (layer (cdr stack1))))))) 
+                                   ((null? body) (cc stack1))                                       ; no body, return stack
+                                   (else (cc stack1))))))]                                          ; return stack otherwise
              [finally (lambda (body stack1)
                         (call/cc (lambda (cc)
                                    (cond
-                                     ((null? body) (cc stack1))
-                                     ((atom? (car stack1)) (cc stack1))
-                                     (else (cc (instr body stack1)))))))])
+                                     ((null? body) (cc stack1))                                     ; nothing to run, return stack
+                                     ((atom? (car stack1)) (cc stack1))                             ; stack has a return, return it
+                                     (else (cc (instr body stack1)))))))])                          ; otherwise run finally block
       (cond
-        ((null? (cadr l)) (finally (cadr (cadr (cdr l))) (try (car l) stack)))
-        (else (finally (if (null? (cadr (cdr l))) '() (cadr (cadr (cdr l))))
-               (catch (cadr (cdr (cadr l))) (car (cadr (cadr l))) (try (car l) stack))))))))
+        ((null? (cadr l)) (finally (cadr (cadr (cdr l))) (try (car l) stack)))                      ; no catch, run try and finally           
+        (else (finally (if (null? (cadr (cdr l))) '() (cadr (cadr (cdr l))))                        ; no finally, run try/catch
+               (catch (cadr (cdr (cadr l))) (car (cadr (cadr l))) (try (car l) stack))))))))        ; try catch finally
 ; ------------------------------------------------------------------------------------------------------------
 ;
 ; Main interpreter
 ;
 ; ------------------------------------------------------------------------------------------------------------
 
-(define run
-  (lambda (l)
-    (interpreter l (layer '(() ())))))
-
+; main interpreter function, runs all instructions
 (define interpreter
+  (lambda (l)
+    (run l (layer '(() ())))))
+
+; process return from main function interpreter
+(define run
   (lambda (l stack)
     (cond 
-      ((atom? stack) stack)
-      ((null? l) (error "no return"))
-      ((eq? 'throw (caar stack)) (error "illegal throw"))
-      (else (interpreter (cdr l) (instr l stack))))))
+      ((atom? stack) stack)                               ; if the stack is an atom (it's the return value)
+      ((null? l) (error "no return"))                     ; no return, throw error
+      ((eq? 'throw (caar stack)) (error "illegal throw")) ; something thrown, but not caught
+      (else (run (cdr l) (instr l stack))))))             ; run instructions
 
 ; main interpreter, takes a list of instructions and a blank stack ie '(() ())                                              
 (define instr
   (lambda (l stack)
     (cond
-      ((atom? stack) stack)
-      ((eq? 'continue (car stack)) (cdr stack))
-      ((eq? 'break (car stack)) stack)
-      ((eq? 'throw (caar stack)) stack)
+      ((atom? stack) stack)                                                                     ; there's a return, return it
+      ((eq? 'continue (car stack)) (cdr stack))                                                 ; continue, return the stack
+      ((eq? 'break (car stack)) stack)                                                          ; break, return stack
+      ((eq? 'throw (caar stack)) stack)                                                         ; throw return stack
       ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))    ; if there's a return, just return the value, no more computation needed
       ((null? l) stack)                                                                         ; no return in instruction
       (else (instr (cdr l) (statement (car l) stack))))))                                       ; else execute current instruction and do a recursive call for the next one

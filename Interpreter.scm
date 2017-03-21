@@ -199,7 +199,7 @@
              [catch (lambda (body x stack1)
                       (call/cc (lambda (cc)
                                  (cond
-                                   ((eq? 'throw (car (car stack1))) (begin body (assign x (cadr (car stack1)) (declare (list 'var x) (layer (cdr stack1))))))
+                                   ((eq? 'throw (car (car stack1))) (popLayer (begin body (assign x (cadr (car stack1)) (declare (list 'var x) (layer (cdr stack1)))))))
                                    ((null? body) (cc stack1))
                                    (else (cc stack1))))))]
              [finally (lambda (body stack1)

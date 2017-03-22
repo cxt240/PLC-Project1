@@ -6,8 +6,8 @@
 ;-----------------------------------------------------------------------------------------------------
 
 ;command issues:
-;(instr (parser "Test2/Test12.txt") '(() ()))
-;(run (parser "Test2/Test17.txt"))
+;(run (parser "Test2/Test12.txt") '(() ()))
+;(interpret (parser "Test2/Test17.txt"))
 
 (load "simpleParser.scm")
 (require racket/trace)
@@ -113,7 +113,7 @@
                                     (cond
                                       ((atom? stack2) stack2)                                                ; if stack atom return atom
                                       ((eq? 'break (car stack2)) (cc (cdr stack2)))                          ; break, exit loop (remove break from stack)
-                                      ((eq? 'throw (car (car stack2))) (cc stack2))                          ; throw, exit loop (return stack, including the throw)
+                                      ((eq? 'throw (car (car stack2))) (cc stack2))                          ; throw, exit loop (return stack, including the throw) ;((throw excetpionValue) (variables ...) (values ...))
                                       ((compound tfStmt stack2) (loop tfStmt body (statement body stack2)))  ; if the loop condition is true, execute the body statement
                                       (else stack2)))))])                                                    ; otherwise return the stack
       (loop tfStmt body stack))))
@@ -222,11 +222,11 @@
 ; ------------------------------------------------------------------------------------------------------------
 
 ; main interpreter function, runs all instructions
-(define interpreter
+(define interpret
   (lambda (l)
     (run l (layer '(() ())))))
 
-; process return from main function interpreter
+; process return from main function interpret
 (define run
   (lambda (l stack)
     (cond 

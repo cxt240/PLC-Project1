@@ -1,4 +1,4 @@
-# PLC-Project1
+# PLC-Project2
 
 @authors: Kavan Mally, Chris Tsuei, Andrew Su
 
@@ -9,9 +9,9 @@ We are not implementing multiple assigns in this interpreter.
 Interpreter is the file containing the compiler.
 To run interpreter given file (filename.txt), call the function run like this:
 
-(interpreter (parser "filename.txt"))
+(interpret (parser "filename.txt"))
 
-To test all files, just run TestSuite.scm file
+To test all files, just run TestSuite2.scm file
 
 Features:
 

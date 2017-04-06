@@ -6,10 +6,9 @@
 ;-----------------------------------------------------------------------------------------------------
 
 ;command issues:
-;(run (parser "Test2/Test12.txt") '(() ()))
-;(interpret (parser "Test2/Test17.txt"))
+;(interpret (parser "filename.txt"))
 
-(load "simpleParser.scm")
+(load "functionParser.scm")
 (require racket/trace)
 
 ; ----------------------------------------------------------------------------------------------------
@@ -215,6 +214,20 @@
         ((null? (cadr l)) (finally (cadr (cadr (cdr l))) (try (car l) stack)))                      ; no catch, run try and finally           
         (else (finally (if (null? (cadr (cdr l))) '() (cadr (cadr (cdr l))))                        ; no finally, run try/catch
                (catch (cadr (cdr (cadr l))) (car (cadr (cadr l))) (try (car l) stack))))))))        ; try catch finally
+
+; ------------------------------------------------------------------------------------------------------------
+;
+; function stuff
+;
+; ------------------------------------------------------------------------------------------------------------
+
+(define funcFilter
+  (lambda (l stack)
+    (cond
+      ((null? l) stack)
+      ((eq? 'var (caar l)) (funcFilter (cdr l) (declare (car l) stack)))
+      (else (funcFilter (cdr l) (list (cons (cadar l) (car stack)) (cons (cddar l) (cadr stack))))))))
+
 ; ------------------------------------------------------------------------------------------------------------
 ;
 ; Main interpreter

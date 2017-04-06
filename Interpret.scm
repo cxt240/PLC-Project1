@@ -221,12 +221,29 @@
 ;
 ; ------------------------------------------------------------------------------------------------------------
 
+; adds all functions that were declared as well as their parameters and instructions to the stack
 (define funcFilter
   (lambda (l stack)
     (cond
-      ((null? l) stack)
-      ((eq? 'var (caar l)) (funcFilter (cdr l) (declare (car l) stack)))
-      (else (funcFilter (cdr l) (list (cons (cadar l) (car stack)) (cons (cddar l) (cadr stack))))))))
+      ((null? l) stack)                                                     ; nothing else to add, return the stack
+      ((eq? 'var (caar l)) (funcFilter (cdr l) (declare (car l) stack)))    ; if the current value is a global variable
+      (else (funcFilter (cdr l) (list (cons (cadar l) (car stack)) (cons (cddar l) (cadr stack)))))))) ; adding a function
+
+(define paramAssign
+  (lambda (field param stack)
+    (cond
+      ((null? field) stack)
+      (else (paramAssign (cdr field) (cdr param) (declare (cons 'var (list (car field) (car param))) stack))))))
+
+; function call and run
+(define runFunction
+  (lambda (name params stack)
+    (cond
+      ((not (exists? name)) (error "Function not declared"))                                ; function doesn't exist, throw an error
+      (else (if (eq? (length (car (getValue (getIndex name stack) stack))) (length params)) ; if the number of fields are the same as the number of parameters
+                (popLayer (instr (cadr (getValue (getIndex name stack) stack))              ; run instruction after declaring and assigning values
+                                 (paramAssign (car (getValue (getIndex name stack) stack)) params (layer stack))))
+                (error "Entered parameters don't match declared parameters"))))))
 
 ; ------------------------------------------------------------------------------------------------------------
 ;

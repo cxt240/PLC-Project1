@@ -254,7 +254,18 @@
 ; main interpreter function, runs all instructions
 (define interpret
   (lambda (l)
-    (run l (layer '(() ())))))
+    (method l (layer '(() ())))))
+
+; parses the file and adds fields to the stack and sends it to the main method handler
+(define method
+  (lambda (l stack)
+    (main (funcFilter l stack))))
+
+; runs the main method
+(define main
+  (lambda (stack)
+    (if (exists? (car stack) 'main) (run (cadr (getValue (cadr stack) (getIndex (car stack) 'main))) stack) ; checks if the main method exists
+        (error "no main method"))))
 
 ; process return from main function interpret
 (define run
@@ -285,6 +296,8 @@
       ((eq? 'throw (car stmt)) (cons stmt stack))                                                     ; throw call
       ((eq? 'continue (car stmt)) (cons 'continue stack))                                             ; continue call
       ((eq? 'break (car stmt)) (cons 'break stack))                                                   ; break call
+      ((eq? 'funcall (car stmt)) (runFunction (cadr stmt) (cddr stmt) stack))                         ; function call 
+      ((eq? 'function (car stmt)) (funcFilter (list stmt) stack))                                     ; inner function create
       ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                           ; while function call
       ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
                                 (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack)  ; if-then-else function call

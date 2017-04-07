@@ -239,10 +239,10 @@
 (define runFunction
   (lambda (name params stack)
     (cond
-      ((not (exists? name)) (error "Function not declared"))                                ; function doesn't exist, throw an error
-      (else (if (eq? (length (car (getValue (getIndex name stack) stack))) (length params)) ; if the number of fields are the same as the number of parameters
-                (popLayer (instr (cadr (getValue (getIndex name stack) stack))              ; run instruction after declaring and assigning values
-                                 (paramAssign (car (getValue (getIndex name stack) stack)) params (layer stack))))
+      ((not (exists? (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
+      (else (if (eq? (length (car (getValue (cadr stack) (getIndex (car stack) name)))) (length params)) ; if the number of fields are the same as the number of parameters
+                (popLayer (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))              ; run instruction after declaring and assigning values
+                                 (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (layer stack))))
                 (error "Entered parameters don't match declared parameters"))))))
 
 ; ------------------------------------------------------------------------------------------------------------

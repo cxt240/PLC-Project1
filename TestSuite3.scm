@@ -25,7 +25,10 @@
 
 
 ;Test5
-(if (not(eq?(interpret (parser "Test3/Test5.txt")) 1)) 'Test5_Fail)
+(with-handlers ([exn:fail? (lambda (v) 'Test5_Fail)])
+    (if (not(eq?(interpret (parser "Test3/Test5.txt")) 1)) 'Test5_Fail))
+(check-not-exn
+        (lambda () (interpret (parser "Test3/Test5.txt"))))
 
 
 

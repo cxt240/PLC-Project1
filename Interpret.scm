@@ -333,6 +333,7 @@
       ((eq? '* (car stmt)) (* (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))        ; * op
       ((eq? '/ (car stmt)) (/ (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))        ; / op
       ((eq? '% (car stmt)) (modulo (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))   ; % op
+      (else (check stmt stack))
       )))
 
 ;checks if the substatement is an atom or not

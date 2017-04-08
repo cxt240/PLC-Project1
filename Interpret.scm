@@ -233,7 +233,7 @@
   (lambda (field param stack)
     (cond
       ((null? field) stack)
-      (else (paramAssign (cdr field) (cdr param) (declare (cons 'var (list (car field) (car param))) stack))))))
+      (else (paramAssign (cdr field) (cdr param) (list (cons (car field) (car stack)) (cons (identify (car param) stack) (cadr stack))))))))
 
 ; function call and run
 (define runFunction
@@ -339,7 +339,9 @@
 (define check
   (lambda (x stack)
     (cond
-      ((list? x) (identify x stack))                               ; list, just do another identify call
+      ((list? x) (if (eq? 'funcall (car x))
+                     (runFunction (cadr x) (list (caddr x)) stack)
+                     (identify x stack)))                               ; list, just do another identify call
       ((number? x) x)                                              ; number, return the number
       ((eq? 'false x) 'false)         
       ((eq? 'true x) 'true)

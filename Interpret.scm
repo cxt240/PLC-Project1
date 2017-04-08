@@ -341,7 +341,7 @@
   (lambda (x stack)
     (cond
       ((list? x) (if (eq? 'funcall (car x))
-                     (runFunction (cadr x) (list (caddr x)) stack)
+                     (runFunction (cadr x) (cddr x) stack)
                      (identify x stack)))                               ; list, just do another identify call
       ((number? x) x)                                              ; number, return the number
       ((eq? 'false x) 'false)         

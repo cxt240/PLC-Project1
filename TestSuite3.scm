@@ -16,10 +16,12 @@
 (if (not(eq?(interpret (parser "Test3/Test3.txt")) 45)) 'Test3_Fail)
 
 ;Test4
-(if (check-not-exn
+(with-handlers ([exn:fail? (lambda (v) 'Test4_Fail)])
+    (if (not(eq?(interpret (parser "Test3/Test4.txt")) 55)) 'Test4_Fail))
+
+(check-not-exn
          (lambda () (interpret (parser "Test3/Test4.txt"))))
-          (if (not(eq?(interpret (parser "Test3/Test4.txt")) 55)) 'Test4_Fail)
-           'Test18_Fail_With_Error)
+
 
 
 ;Test5
@@ -32,23 +34,41 @@
  ;         (lambda () (interpret (parser "Test3/Test5.txt"))))) 'Test5_Fail)
 
 ;Test6
-(if (not(eq?(interpret (parser "Test3/Test6.txt")) 115)) 'Test6_Fail)
+(with-handlers ([exn:fail? (lambda (v) 'Test6_Fail)])
+    (if (not(eq?(interpret (parser "Test3/Test6.txt")) 115)) 'Test6_Fail))
+(check-not-exn
+        (lambda () (interpret (parser "Test3/Test6.txt"))))
 
 
 ;Test7
-(if (not(eq?(interpret (parser "Test3/Test7.txt")) "true")) 'Test7_Fail)
+(with-handlers ([exn:fail? (lambda (v) 'Test7_Error)])
+    (if (not(eq?(interpret (parser "Test3/Test7.txt")) 'true)) 'Test7_Fail))
+(check-not-exn
+         (lambda () (interpret (parser "Test3/Test7.txt"))))
 
 ;Test8
-(if (not(eq?(interpret (parser "Test3/Test8.txt")) 20)) 'Test8_Fail)
+(with-handlers ([exn:fail? (lambda (v) 'Test8_Error)])
+    (if (not(eq?(interpret (parser "Test3/Test8.txt")) 20)) 'Test8_Fail))
+(with-handlers ([exn:fail? (lambda (exn) +inf.0)])
+    (if (not(eq?(interpret (parser "Test3/Test8.txt")) 20)) '()))
 
 ;Test9
-(if (not(eq?(interpret (parser "Test3/Test9.txt")) 24)) 'Test9_Fail)
+(with-handlers ([exn:fail? (lambda (v) 'Test9_Error)])
+    (if (not(eq?(interpret (parser "Test3/Test9.txt")) 24)) 'Test9_Fail))
+(with-handlers ([exn:fail? (lambda (exn) +inf.0)])
+    (if (not(eq?(interpret (parser "Test3/Test9.txt")) 24)) '()))
 
 ;Test10
-(if (not(eq?(interpret (parser "Test3/Test10.txt")) 2)) 'Test10_Fail)
+(with-handlers ([exn:fail? (lambda (v) 'Test10_Error)])
+    (if (not(eq?(interpret (parser "Test3/Test10.txt")) 2)) 'Test10_Fail))
+(with-handlers ([exn:fail? (lambda (exn) +inf.0)])
+    (if (not(eq?(interpret (parser "Test3/Test10.txt")) 2)) 'Test10_Fail))
 
 ;Test11
-(if (not(eq?(interpret (parser "Test3/Test11.txt")) 35)) 'Test11_Fail)
+(with-handlers ([exn:fail? (lambda (v) 'Test11_Error)])
+    (if (not(eq?(interpret (parser "Test3/Test11.txt")) 35)) 'Test11_Fail))
+(with-handlers ([exn:fail? (lambda (exn) +inf.0)])
+    (if (not(eq?(interpret (parser "Test3/Test11.txt")) 35)) 'Test11_Fail))
 
 ;(if (not (check-exn
 ;          exn:fail?
@@ -63,12 +83,10 @@
 ;Test13
 
 
-(if (check-not-exn
-         (lambda () (interpret (parser "Test3/Test13.txt")))) 
-         (if (not(eq?(interpret (parser "Test3/Test13.txt")) 90)) 'Test13_Fail)
-         'Test15_Fail_With_Error)
-
-(if (not(eq?(interpret (parser "Test3/Test13.txt")) 90)) 'Test13_Fail)
+(with-handlers ([exn:fail? (lambda (v) 'Test13_Error)])
+    (if (not(eq?(interpret (parser "Test3/Test11.txt")) 90)) 'Test13_Fail))
+(with-handlers ([exn:fail? (lambda (exn) +inf.0)])
+    (if (not(eq?(interpret (parser "Test3/Test11.txt")) 90)) 'Test13_Fail))
 
 ;Test14
 (if (not(eq?(interpret (parser "Test3/Test14.txt")) 69)) 'Test14_Fail)

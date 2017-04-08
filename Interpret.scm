@@ -230,10 +230,11 @@
       (else (funcFilter (cdr l) (list (cons (cadar l) (car stack)) (cons (cddar l) (cadr stack)))))))) ; adding a function
 
 (define paramAssign
-  (lambda (field param stack)
+  (lambda (field param newStack stack)
     (cond
-      ((null? field) stack)
-      (else (paramAssign (cdr field) (cdr param) (list (cons (car field) (car stack)) (cons (identify (car param) stack) (cadr stack))))))))
+      ((null? field) newStack)
+      (else (paramAssign (cdr field) (cdr param)
+                         (list (cons (car field) (car newStack)) (cons (identify (car param) stack) (cadr newStack))) stack)))))
 
 ; function call and run
 (define runFunction
@@ -242,7 +243,7 @@
       ((not (exists? (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
       (else (if (eq? (length (car (getValue (cadr stack) (getIndex (car stack) name)))) (length params)) ; if the number of fields are the same as the number of parameters
                 (popLayer (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))              ; run instruction after declaring and assigning values
-                                 (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (layer stack))))
+                                 (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (layer stack) stack)))
                 (error "Entered parameters don't match declared parameters"))))))
 
 ; ------------------------------------------------------------------------------------------------------------

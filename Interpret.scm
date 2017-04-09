@@ -61,13 +61,20 @@
       (else (exists? (cdr l) x))))); recursive call to next element
 
 ; gets the index of the corresponding value
-(define getIndex
+(define index
   (lambda (l x)
     (cond
       ((null? l) (error "Using before declaring")) ; nothing left in list, throw error
       ((eq? (car l) x) 0)                          ; found variable, return zero and allow recursive add
-      (else (+ 1 (getIndex (cdr l) x))))))         ; recursive call to cdr of list
+      (else (+ 1 (index (cdr l) x))))))         ; recursive call to cdr of list
 
+(define getIndex
+  (lambda (l x)
+    (cond
+      ((localScope l x) (index l x))
+      (else (+ (index (suffix 'function l) x) (- (length l) (length (suffix 'function l))))))))
+
+                      
 ; gets the value of the variable at index x
 (define getValue
   (lambda (l x)
@@ -318,12 +325,12 @@
 (define base
   (lambda (l)
     (cond
-      (else (list (cons 'main (car l)) (cons 'main (cadr l)))))))  ; only section: adds the base layer to both parts of the stack
+      (else (list (cons 'base (car l)) (cons 'base (cadr l)))))))  ; only section: adds the base layer to both parts of the stack
 
 ; runs the main method
 (define main
   (lambda (stack)
-    (if (exists? (car stack) 'main) (run (cadr (getValue (cadr stack) (getIndex (car stack) 'main))) stack) ; checks if the main method exists
+    (if (exists? (car stack) 'main) (run (cadr (getValue (cadr stack) (getIndex (car stack) 'main))) (func stack)) ; checks if the main method exists
         (error "no main method"))))
 
 ; process return from main function interpret

@@ -236,14 +236,32 @@
       (else (paramAssign (cdr field) (cdr param)
                          (list (cons (car field) (car newStack)) (cons (identify (car param) stack) (cadr newStack))) stack)))))
 
+; function initializes the seperator of a function call
+(define func
+  (lambda (l)
+    (cond
+      (else (list (cons 'function (car l)) (cons 'function (cadr l)))))))  ; only section: adds the base layer to both parts of the stack
+
+(define popfunc
+  (lambda (l)
+    (cond
+      ((atom? l) l)                                            ; atom ---  if list is an atom, return
+      ((atom? (car l)) (cons (car l) (popLayer (cdr l))))      ; break/continue atom, pop the stack
+      ((eq? 'throw (caar l)) (cons (car l) (popfunc (cdr l)))); throw (it's the first list) pop stack
+      ((zero? (getIndex (car l) 'function))
+       (list (cdr (car l)) (cdr (cadr l))))                    ; if function index 0 return list of sublist 1 and 2
+      (else (list
+             (removeX (car l) (getIndex (car l) 'function))
+             (removeX (cadr l) (getIndex (car l) 'function))))))) ; else return stack with last element in stack removed
+
 ; function call and run
 (define runFunction
   (lambda (name params stack)
     (cond
       ((not (exists? (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
       (else (if (eq? (length (car (getValue (cadr stack) (getIndex (car stack) name)))) (length params)) ; if the number of fields are the same as the number of parameters
-                (popLayer (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))              ; run instruction after declaring and assigning values
-                                 (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (layer stack) stack)))
+                (popfunc (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))              ; run instruction after declaring and assigning values
+                                 (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (func stack) stack)))
                 (error "Entered parameters don't match declared parameters"))))))
 
 ; ------------------------------------------------------------------------------------------------------------
@@ -260,7 +278,13 @@
 ; parses the file and adds fields to the stack and sends it to the main method handler
 (define method
   (lambda (l stack)
-    (main (funcFilter l stack))))
+    (main (funcFilter l (base stack)))))
+
+; function initializes the bottom of the stack
+(define base
+  (lambda (l)
+    (cond
+      (else (list (cons 'main (car l)) (cons 'main (cadr l)))))))  ; only section: adds the base layer to both parts of the stack
 
 ; runs the main method
 (define main

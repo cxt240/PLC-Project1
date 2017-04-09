@@ -41,12 +41,13 @@
 
 ; tells if a variable is in the scope of the function
 (define inScope
-  (lambda (a x)
+  (lambda (x a)
     (cond
+      ((null? x) #f)
       ((exists? (suffix 'function x) a) #t)   ; exists in the global scope
       ((eq? 'function (car x)) #f)          ; function seperator, return false
       ((eq? (car x) a) #t)                  ; matching variable, return true
-      (else (inScope a (cdr x))))))         ; check with the cdr of the list
+      (else (inScope (cdr x) a)))))         ; check with the cdr of the list
 
 ; checks if the variable exists
 (define exists?
@@ -161,7 +162,7 @@
 (define declare
   (lambda (stmt stack)
     (cond
-      ((exists? (car stack) (cadr stmt)) (error "Redefining"))                              ; variable has already been declared
+      ((inScope (car stack) (cadr stmt)) (error "Redefining"))                              ; variable has already been declared
       ((eq? 3 (length stmt))
        (assign (cadr stmt) (cadr (cdr stmt))
                (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))            ; variable with a value declaration
@@ -171,7 +172,7 @@
 (define assign
   (lambda (var val stack)
     (cond
-      ((not (exists? (car stack) var)) (error "Using before declaring"))                                                                 ; variable does not exists
+      ((not (inScope (car stack) var)) (error "Using before declaring"))                                                                 ; variable does not exists
       ((list? val) (if (bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var)))
        (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))))                                      ; if the assignment is to be a function, find the value of the function before changing the value
       ((exists? (car stack) var) (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))             ; otherwise assign the value
@@ -285,7 +286,7 @@
 (define runFunction
   (lambda (name params stack)
     (cond
-      ((not (exists? (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
+      ((not (inScope (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
       (else (if (eq? (length (car (getValue (cadr stack) (getIndex (car stack) name)))) (length params)) ; if the number of fields are the same as the number of parameters
                 (popfunc (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))               ; run instruction after declaring and assigning values
                                  (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (func stack) stack)))

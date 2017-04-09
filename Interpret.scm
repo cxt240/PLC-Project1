@@ -22,6 +22,32 @@
   (lambda (x)
       (and (not (pair? x)) (not (null? x)))))
 
+; suffix returns a list from the original list l containing elements after the last occurence in l of the atom a
+(define suffix
+  (lambda (a l)
+    (letrec ([last? (lambda (a1 l1 return)      ; checks if the current list has no atoms a1 remaining
+                              (cond
+                                ((null? l1) #t)        ; null list, then true
+                                ((eq? a1 (car l1)) #f) ; if there's an a1 remaining in l1, false
+                                (else (last? a1 (cdr l1) (lambda (v) (return v))))))] ; cps call to the next element
+             [next (lambda (a l return)                ; finds the list after the next element of x
+                                       (cond
+                                         ((null? l) '())           ; nothing left, return an empty list
+                                         ((eq? a (car l)) (cdr l)) ; found atom a, return the cdr of the list
+                                         (else (next a (cdr l) (lambda (v) (return v))))))]) ; otherwise cps call to the next element
+      (if (last? a l (lambda (v) v)) l (suffix a (next a l (lambda (v) v)))))))              ; body statement using letrec. if statement checks if there's no atoms a
+                                                                                             ; in l, if true, returns the list, otherwise recursive call using the list
+                                                                                            ; outputted by the next function
+
+; tells if a variable is in the scope of the function
+(define inScope
+  (lambda (a x)
+    (cond
+      ((exists? (suffix 'function x) a) #t)   ; exists in the global scope
+      ((eq? 'function (car x)) #f)          ; function seperator, return false
+      ((eq? (car x) a) #t)                  ; matching variable, return true
+      (else (inScope a (cdr x))))))         ; check with the cdr of the list
+
 ; checks if the variable exists
 (define exists?
   (lambda (l x)
@@ -229,11 +255,12 @@
       ((eq? 'var (caar l)) (funcFilter (cdr l) (declare (car l) stack)))    ; if the current value is a global variable
       (else (funcFilter (cdr l) (list (cons (cadar l) (car stack)) (cons (cddar l) (cadr stack)))))))) ; adding a function
 
+; assigns the specified inputs to the parameters of a function
 (define paramAssign
   (lambda (field param newStack stack)
     (cond
-      ((null? field) newStack)
-      (else (paramAssign (cdr field) (cdr param)
+      ((null? field) newStack)                                                ; no more parameters to assign
+      (else (paramAssign (cdr field) (cdr param)                              ; next parameter to assign, add current one to stack
                          (list (cons (car field) (car newStack)) (cons (identify (car param) stack) (cadr newStack))) stack)))))
 
 ; function initializes the seperator of a function call
@@ -247,7 +274,7 @@
     (cond
       ((atom? l) l)                                            ; atom ---  if list is an atom, return
       ((atom? (car l)) (cons (car l) (popLayer (cdr l))))      ; break/continue atom, pop the stack
-      ((eq? 'throw (caar l)) (cons (car l) (popfunc (cdr l)))); throw (it's the first list) pop stack
+      ((eq? 'throw (caar l)) (cons (car l) (popfunc (cdr l)))) ; throw (it's the first list) pop stack
       ((zero? (getIndex (car l) 'function))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if function index 0 return list of sublist 1 and 2
       (else (list
@@ -260,7 +287,7 @@
     (cond
       ((not (exists? (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
       (else (if (eq? (length (car (getValue (cadr stack) (getIndex (car stack) name)))) (length params)) ; if the number of fields are the same as the number of parameters
-                (popfunc (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))              ; run instruction after declaring and assigning values
+                (popfunc (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))               ; run instruction after declaring and assigning values
                                  (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (func stack) stack)))
                 (error "Entered parameters don't match declared parameters"))))))
 

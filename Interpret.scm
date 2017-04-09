@@ -40,14 +40,17 @@
                                                                                             ; outputted by the next function
 
 ; tells if a variable is in the scope of the function
-(define inScope
+(define localScope
   (lambda (x a)
     (cond
       ((null? x) #f)
-      ((exists? (suffix 'function x) a) #t)   ; exists in the global scope
       ((eq? 'function (car x)) #f)          ; function seperator, return false
       ((eq? (car x) a) #t)                  ; matching variable, return true
-      (else (inScope (cdr x) a)))))         ; check with the cdr of the list
+      (else (localScope (cdr x) a)))))      ; check with the cdr of the list
+
+(define inScope
+  (lambda (x a)
+    (or (exists? (suffix 'function x) a) (localScope x a))))
 
 ; checks if the variable exists
 (define exists?
@@ -162,7 +165,10 @@
 (define declare
   (lambda (stmt stack)
     (cond
-      ((inScope (car stack) (cadr stmt)) (error "Redefining"))                              ; variable has already been declared
+      ((inScope (car stack) (cadr stmt)) (if (not (localScope (car stack) (cadr stmt)))           ; localScope, variable has not been declared
+                                             (assign (cadr stmt) (cadr (cdr stmt))
+                                                     (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack))))
+                                             (error "Redefining")))                         ; variable has already been declared
       ((eq? 3 (length stmt))
        (assign (cadr stmt) (cadr (cdr stmt))
                (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))            ; variable with a value declaration

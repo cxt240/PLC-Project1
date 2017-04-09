@@ -378,7 +378,7 @@
       ((atom? stmt) (getValue (cadr stack) (getIndex (car stack) stmt)))                                   ; if stmt atom and not true or false evaluate
       ((eq? (car stmt) '&&) (and (compound (cadr stmt) stack) (compound (cadr (cdr stmt)) stack)))         ; if stmt AND evaluate and of recursive call
       ((eq? (car stmt) '||) (or  (compound (cadr stmt) stack) (compound (cadr (cdr stmt)) stack)))         ; if stmt OR evaluate or of recursive call
-      ((eq? (car stmt) 'funcall) (runFunction (cadr x) (cddr x) stack))
+      ((eq? (car stmt) 'funcall) (runFunction (cadr stmt) (cddr stmt) stack))
       (else (simple stmt stack)))))   
 
 ;identifys out int compator operations

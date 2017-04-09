@@ -120,11 +120,11 @@
       ((atom? l) l)                                            ; atom ---  if list is an atom, return
       ((atom? (car l)) (cons (car l) (popLayer (cdr l))))      ; break/continue atom, pop the stack
       ((eq? 'throw (caar l)) (cons (car l) (popLayer (cdr l)))); throw (it's the first list) pop stack
-      ((zero? (getIndex (car l) 'layer))
+      ((zero? (index (car l) 'layer))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if layer index 0 return list of sublist 1 and 2
       (else (list
-             (removeX (car l) (getIndex (car l) 'layer))
-             (removeX (cadr l) (getIndex (car l) 'layer))))))) ; else return stack with last element in stack removed
+             (removeX (car l) (index (car l) 'layer))
+             (removeX (cadr l) (index (car l) 'layer))))))) ; else return stack with last element in stack removed
 
 
 ; ---------------------------------------------------------------------------------------------------
@@ -289,11 +289,11 @@
       ((atom? l) l)                                            ; atom ---  if list is an atom, return
       ((atom? (car l)) (cons (car l) (popLayer (cdr l))))      ; break/continue atom, pop the stack
       ((eq? 'throw (caar l)) (cons (car l) (popfunc (cdr l)))) ; throw (it's the first list) pop stack
-      ((zero? (getIndex (car l) 'function))
+      ((zero? (index (car l) 'function))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if function index 0 return list of sublist 1 and 2
       (else (list
-             (removeX (car l) (getIndex (car l) 'function))
-             (removeX (cadr l) (getIndex (car l) 'function))))))) ; else return stack with last element in stack removed
+             (removeX (car l) (index (car l) 'function))
+             (removeX (cadr l) (index (car l) 'function))))))) ; else return stack with last element in stack removed
 
 ; function call and run
 (define runFunction

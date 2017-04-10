@@ -120,6 +120,9 @@
       ((atom? l) l)                                            ; atom ---  if list is an atom, return
       ((atom? (car l)) (cons (car l) (popLayer (cdr l))))      ; break/continue atom, pop the stack
       ((eq? 'throw (caar l)) (cons (car l) (popLayer (cdr l)))); throw (it's the first list) pop stack
+      ((eq? 'return (caar l)) (list
+                               (cons 'return (removeX (car l) (index (car l) 'function)))
+                               (cons (caadr l) (removeX (cadr l) (index (car l) 'function)))))
       ((zero? (index (car l) 'layer))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if layer index 0 return list of sublist 1 and 2
       (else (list
@@ -263,6 +266,17 @@
 ;
 ; ------------------------------------------------------------------------------------------------------------
 
+(define popReturn
+  (lambda (stack)
+    (list (cdar stack) (cdadr stack))))
+
+(define getReturn
+  (lambda (stack)
+    (cond
+      ((eq? 'return (caar stack)) (caadr stack))
+      (else stack))))
+
+       
 ; adds all functions that were declared as well as their parameters and instructions to the stack
 (define funcFilter
   (lambda (l stack)
@@ -291,6 +305,9 @@
       ((atom? l) l)                                            ; atom ---  if list is an atom, return
       ((atom? (car l)) (cons (car l) (popLayer (cdr l))))      ; break/continue atom, pop the stack
       ((eq? 'throw (caar l)) (cons (car l) (popfunc (cdr l)))) ; throw (it's the first list) pop stack
+      ((eq? 'return (caar l)) (list
+                               (cons 'return (removeX (car l) (index (car l) 'function)))
+                               (cons (caadr l) (removeX (cadr l) (index (car l) 'function)))))
       ((zero? (index (car l) 'function))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if function index 0 return list of sublist 1 and 2
       (else (list
@@ -340,6 +357,7 @@
   (lambda (l stack)
     (cond 
       ((atom? stack) stack)                               ; if the stack is an atom (it's the return value)
+      ((eq? 'return (caar stack)) (getReturn stack))
       ((null? l) (error "no return"))                     ; no return, throw error
       ((eq? 'throw (caar stack)) (error "illegal throw")) ; something thrown, but not caught
       (else (run (cdr l) (instr l stack))))))             ; run instructions
@@ -352,7 +370,7 @@
       ((eq? 'continue (car stack)) (cdr stack))                                                 ; continue, return the stack
       ((eq? 'break (car stack)) stack)                                                          ; break, return stack
       ((eq? 'throw (caar stack)) stack)                                                         ; throw return stack
-      ((exists? (car stack) 'return) (getValue (cadr stack) (getIndex (car stack) 'return)))    ; if there's a return, just return the value, no more computation needed
+      ((exists? (car stack) 'return) stack)                                                     ; if there's a return, return the stack
       ((null? l) stack)                                                                         ; no return in instruction
       (else (instr (cdr l) (statement (car l) stack))))))                                       ; else execute current instruction and do a recursive call for the next one
 
@@ -364,7 +382,7 @@
       ((eq? 'throw (car stmt)) (cons stmt stack))                                                     ; throw call
       ((eq? 'continue (car stmt)) (cons 'continue stack))                                             ; continue call
       ((eq? 'break (car stmt)) (cons 'break stack))                                                   ; break call
-      ((eq? 'funcall (car stmt)) (runFunction (cadr stmt) (cddr stmt) stack))                         ; function call 
+      ((eq? 'funcall (car stmt)) (popReturn (runFunction (cadr stmt) (cddr stmt) stack)))             ; function call (no return) 
       ((eq? 'function (car stmt)) (funcFilter (list stmt) stack))                                     ; inner function create
       ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                           ; while function call
       ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
@@ -409,7 +427,7 @@
   (lambda (x stack)
     (cond
       ((list? x) (if (eq? 'funcall (car x))
-                     (runFunction (cadr x) (cddr x) stack)
+                     (getReturn (runFunction (cadr x) (cddr x) stack))
                      (identify x stack)))                               ; list, just do another identify call
       ((number? x) x)                                              ; number, return the number
       ((eq? 'false x) 'false)         

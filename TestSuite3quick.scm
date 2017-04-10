@@ -82,7 +82,6 @@
 ;Test14
 (with-handlers ([exn:fail? (lambda (v) 'Test14_Error)])
     (if (not(eq?(interpret (parser "Test3/Test14.txt")) 69)) 'Test14_Fail))
-(interpret (parser "Test3/Test14.txt"))
 
 ;Test15
 (with-handlers ([exn:fail? (lambda (v) 'Test15_Error)])

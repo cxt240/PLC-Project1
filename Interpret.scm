@@ -258,9 +258,9 @@
              [catch (lambda (body x stack1)
                       (call/cc (lambda (cc)
                                  (cond
-                                   ((eq? 'throw (car (car stack1)))                                 ; if something was thrown, add a layer, assign the error (e) the thrown value
+                                   ((eq? 'throw (caar stack1))                                 ; if something was thrown, add a layer, assign the error (e) the thrown value
                                     (popLayer (begin body                                           ; run catch body on it
-                                                     (assign x (cadr (car stack1)) (declare (list 'var x) (layer (cdr stack1))))))) 
+                                                     (assign x (cadar stack1) (declare (list 'var x) (layer (cdr stack1))))))) 
                                    ((null? body) (cc stack1))                                       ; no body, return stack
                                    (else (cc stack1))))))]                                          ; return stack otherwise
              [finally (lambda (body stack1)
@@ -451,15 +451,26 @@
   (lambda (stmt stack)  ; car stmt is op
     (cond
       ((or (null? stmt)) '() )
-      ((atom? stmt) (check stmt stack)) 
-      ((eq? '+ (car stmt)) (+ (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))        ; + op
-      ((eq? '- (car stmt)) (- (if (eq? 2 (length stmt)) 0 (check (cadr stmt) stack))
-                              (if (eq? 2 (length stmt)) (check (cadr stmt) stack) (check (cadr (cdr stmt)) stack))))                ; - op (or i guess negative sign)
-      ((eq? '* (car stmt)) (* (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))        ; * op
-      ((eq? '/ (car stmt)) (/ (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))        ; / op
-      ((eq? '% (car stmt)) (modulo (check (cadr stmt) stack) (if (not (eq? 2 (length stmt))) (check (cadr (cdr stmt)) stack) 0)))   ; % op
-      (else (check stmt stack))
-      )))
+      ((atom? stmt) (check stmt stack))
+      ((valid-op (car stmt))
+       (cond
+         ((eq? (car stmt) '-)
+          (if (eq? 2 (length stmt)) (evaluate '- 0 (check (cadr stmt) stack))
+              (evaluate '- (check (cadr stmt) stack) (check (caddr stmt) stack))))
+         ((eq? 2 (length stmt)) (evaluate (car stmt) (check (cadr stmt) stack) 0))
+         (else (evaluate (car stmt) (check (cadr stmt) stack) (check (caddr stmt) stack)))))
+      (else (check stmt stack)))))
+
+(define evaluate
+  (lambda (op val1 val2)
+    (cond
+      ((list? val1) val1)
+      ((list? val2) val2)
+      ((eq? '+ op) (+ val1 val2))         ; + op
+      ((eq? '- op) (- val1 val2))         ; - op (or i guess negative sign)
+      ((eq? '* op) (* val1 val2))         ; * op
+      ((eq? '/ op) (/ val1 val2))         ; / op
+      ((eq? '% op) (modulo val1 val2))))) ; % op
 
 ;checks if the substatement is an atom or not
 (define check

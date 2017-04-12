@@ -197,13 +197,21 @@
                (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))            ; variable with a value declaration
       (else (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))))             ; add var and init to stack in respective places
 
+;
+(define setVar
+  (lambda (var stack)
+    (assign var (getReturn stack) (list (cdar stack) (cdadr stack)))))
+
 ; Assigning a value to a variable given the variable name, the value to be assigned (can be a function), and the stack
 (define assign
   (lambda (var val stack)
     (cond
       ((not (exists? (car stack) var)) (error "Variable not in scope"))                                                            ; variable does not exist
-      ((list? val) (if (bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var)))
-       (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))))                                      ; if the assignment is to be a function, find the value of the function before changing the value
+      ((list? val)
+       (if (eq? (car val) 'funcall)
+           (setVar var (runFunction (cadr val) (cddr val) stack))
+           (if (bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var)))
+               (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))))                                      ; if the assignment is to be a function, find the value of the function before changing the value
       ((exists? (car stack) var) (if (inScope (car stack) var)
                                      (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))             ; otherwise assign the value
                                      (error "Variable not in scope")))

@@ -121,8 +121,8 @@
       ((atom? (car l)) (cons (car l) (popLayer (cdr l))))      ; break/continue atom, pop the stack
       ((eq? 'throw (caar l)) (cons (car l) (popLayer (cdr l)))); throw (it's the first list) pop stack
       ((eq? 'return (caar l)) (list
-                               (cons 'return (removeX (car l) (index (car l) 'function)))
-                               (cons (caadr l) (removeX (cadr l) (index (car l) 'function)))))
+                               (cons 'return (removeX (car l) (index (car l) 'layer)))
+                               (cons (caadr l) (removeX (cadr l) (index (car l) 'layer)))))
       ((zero? (index (car l) 'layer))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if layer index 0 return list of sublist 1 and 2
       (else (list
@@ -180,7 +180,7 @@
                                                      (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack))))
                                              (error "Redefining")))                         ; variable has already been declared
       ((eq? 3 (length stmt))
-       (assign (cadr stmt) (cadr (cdr stmt))
+       (assign (cadr stmt) (caddr stmt)
                (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))            ; variable with a value declaration
       (else (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))))             ; add var and init to stack in respective places
 
@@ -268,7 +268,7 @@
 
 (define popReturn
   (lambda (stack)
-    (list (cdar stack) (cdadr stack))))
+    (if (exists? (car stack) 'function) (list (cdar stack) (cdadr stack)) stack)))
 
 (define getReturn
   (lambda (stack)
@@ -303,7 +303,7 @@
   (lambda (l)
     (cond
       ((atom? l) l)                                            ; atom ---  if list is an atom, return
-      ((atom? (car l)) (cons (car l) (popLayer (cdr l))))      ; break/continue atom, pop the stack
+      ((atom? (car l)) (cons (car l) (popfunc (cdr l))))      ; break/continue atom, pop the stack
       ((eq? 'throw (caar l)) (cons (car l) (popfunc (cdr l)))) ; throw (it's the first list) pop stack
       ((eq? 'return (caar l)) (list
                                (cons 'return (removeX (car l) (index (car l) 'function)))
@@ -386,7 +386,7 @@
       ((eq? 'function (car stmt)) (funcFilter (list stmt) stack))                                     ; inner function create
       ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                           ; while function call
       ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))
-                                (ifStmt (cadr stmt) (cadr (cdr stmt)) (cadr (cdr (cdr stmt))) stack)  ; if-then-else function call
+                                (ifStmt (cadr stmt) (caddr stmt) (cadddr stmt) stack)  ; if-then-else function call
                                 (ifStmt (cadr stmt) (cadr (cdr stmt)) '() stack)))                    ; if-then function call
       ((eq? 'begin (car stmt)) (begin (cdr stmt) stack))                                              ; begin
       ((eq? 'try (car stmt)) (tcf (cdr stmt) stack))                                                  ; try call

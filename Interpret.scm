@@ -185,13 +185,6 @@
 (define declare
   (lambda (stmt stack)
     (cond
-      ((inScope (car stack) (cadr stmt)) (if (not (localScope (car stack) (cadr stmt)))           ; localScope variable has not been declared
-                                             (assign (cadr stmt) (cadr (cdr stmt))
-                                                     (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack))))
-                                             (if (inner? (car stack) (cadr stmt))
-                                                 (assign (cadr stmt) (cadr (cdr stmt))
-                                                     (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack))))
-                                                 (error "Redefining"))))                         ; variable has already been declared locally, check for inner call
       ((eq? 3 (length stmt))
        (assign (cadr stmt) (caddr stmt)
                (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))            ; variable with a value declaration

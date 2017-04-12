@@ -43,11 +43,21 @@
 (define localScope
   (lambda (x a)
     (cond
-      ((null? x) #f)
+      ((null? x) #f)                        ; nothing left in the list, return false
       ((eq? 'function (car x)) #f)          ; function seperator, return false
       ((eq? (car x) a) #t)                  ; matching variable, return true
       (else (localScope (cdr x) a)))))      ; check with the cdr of the list
 
+; tells if variable is in the inner scope
+(define inner?
+  (lambda (x a)
+    (cond
+      ((null? x) #f)                        ; nothing left, false
+      ((eq? 'innerfunction (car x)) #f)     ; function seperator, return false
+      ((eq? (car x) a) #t)                  ; matching variable, return true
+      (else (inner? (cdr x) a)))))      ; recursive call
+
+; in the scope of the variable.
 (define inScope
   (lambda (x a)
     (or (exists? (suffix 'function x) a) (localScope x a))))
@@ -175,10 +185,13 @@
 (define declare
   (lambda (stmt stack)
     (cond
-      ((inScope (car stack) (cadr stmt)) (if (not (localScope (car stack) (cadr stmt)))           ; localScope, variable has not been declared
+      ((inScope (car stack) (cadr stmt)) (if (not (localScope (car stack) (cadr stmt)))           ; localScope variable has not been declared
                                              (assign (cadr stmt) (cadr (cdr stmt))
                                                      (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack))))
-                                             (error "Redefining")))                         ; variable has already been declared
+                                             (if (inner? (car stack) (cadr stmt))
+                                                 (assign (cadr stmt) (cadr (cdr stmt))
+                                                     (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack))))
+                                                 (error "Redefining"))))                         ; variable has already been declared locally, check for inner call
       ((eq? 3 (length stmt))
        (assign (cadr stmt) (caddr stmt)
                (list (cons (cadr stmt) (car stack)) (cons 'null (cadr stack)))))            ; variable with a value declaration
@@ -293,7 +306,7 @@
       (else (paramAssign (cdr field) (cdr param)                              ; next parameter to assign, add current one to stack
                          (list (cons (car field) (car newStack)) (cons (identify (car param) stack) (cadr newStack))) stack)))))
 
-; function initializes the seperator of a function call
+; function initializes the seperator of a normal function call
 (define func
   (lambda (l)
     (cond
@@ -303,9 +316,9 @@
   (lambda (l)
     (cond
       ((atom? l) l)                                            ; atom ---  if list is an atom, return
-      ((atom? (car l)) (cons (car l) (popfunc (cdr l))))      ; break/continue atom, pop the stack
+      ((atom? (car l)) (cons (car l) (popfunc (cdr l))))       ; break/continue atom, pop the stack
       ((eq? 'throw (caar l)) (cons (car l) (popfunc (cdr l)))) ; throw (it's the first list) pop stack
-      ((eq? 'return (caar l)) (list
+      ((eq? 'return (caar l)) (list                            ; keeps the return, destroys everything else
                                (cons 'return (removeX (car l) (index (car l) 'function)))
                                (cons (caadr l) (removeX (cadr l) (index (car l) 'function)))))
       ((zero? (index (car l) 'function))
@@ -314,11 +327,36 @@
              (removeX (car l) (index (car l) 'function))
              (removeX (cadr l) (index (car l) 'function))))))) ; else return stack with last element in stack removed
 
+; function initializes the seperator of an inner function call
+(define inFunc
+  (lambda (l)
+    (cond
+      (else (list (cons 'innerfunction (car l)) (cons 'innerfunction (cadr l)))))))  ; only section: adds the base layer to both parts of the stack
+
+; pops the inner function.
+(define popInner
+  (lambda (l)
+    (cond
+      ((atom? l) l)                                            ; atom ---  if list is an atom, return
+      ((atom? (car l)) (cons (car l) (popInner (cdr l))))       ; break/continue atom, pop the stack
+      ((eq? 'throw (caar l)) (cons (car l) (popInner (cdr l)))) ; throw (it's the first list) pop stack
+      ((eq? 'return (caar l)) (list                            ; keeps the return, destroys everything else
+                               (cons 'return (removeX (car l) (index (car l) 'innerfunction)))
+                               (cons (caadr l) (removeX (cadr l) (index (car l) 'innerfunction)))))
+      ((zero? (index (car l) 'innerfunction))
+       (list (cdr (car l)) (cdr (cadr l))))                    ; if function index 0 return list of sublist 1 and 2
+      (else (list
+             (removeX (car l) (index (car l) 'innerfunction))
+             (removeX (cadr l) (index (car l) 'innerfunction)))))))
+    
 ; function call and run
 (define runFunction
   (lambda (name params stack)
     (cond
       ((not (inScope (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
+      ((localScope (car stack) name)
+          (popInner (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))                     ; inner functions
+                           (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (inFunc stack) stack))))
       (else (if (eq? (length (car (getValue (cadr stack) (getIndex (car stack) name)))) (length params)) ; if the number of fields are the same as the number of parameters
                 (popfunc (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))               ; run instruction after declaring and assigning values
                                  (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (func stack) stack)))
@@ -382,7 +420,7 @@
       ((eq? 'throw (car stmt)) (cons stmt stack))                                                     ; throw call
       ((eq? 'continue (car stmt)) (cons 'continue stack))                                             ; continue call
       ((eq? 'break (car stmt)) (cons 'break stack))                                                   ; break call
-      ((eq? 'funcall (car stmt)) (popReturn (runFunction (cadr stmt) (cddr stmt) stack)))             ; function call (no return) 
+      ((eq? 'funcall (car stmt)) (popReturn (runFunction (cadr stmt) (cddr stmt) stack)))             ; function call
       ((eq? 'function (car stmt)) (funcFilter (list stmt) stack))                                     ; inner function create
       ((eq? 'while (car stmt)) (while (cadr stmt) (cadr (cdr stmt)) stack))                           ; while function call
       ((eq? 'if (car stmt)) (if (eq? 4 (length stmt))

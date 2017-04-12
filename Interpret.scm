@@ -349,7 +349,7 @@
       ((atom? (car l)) (cons (car l) (popInner (cdr l))))       ; break/continue atom, pop the stack
       ((eq? 'throw (caar l)) (cons (car l) (popInner (cdr l)))) ; throw (it's the first list) pop stack
       ((eq? 'return (caar l)) (list                            ; keeps the return, destroys everything else
-                               (cons 'return (removeX (car l) (index (car l) 'innerfunction)))
+                               (cons 'return (removeX (car l) (index (car l) 'main)))
                                (cons (caadr l) (removeX (cadr l) (index (car l) 'innerfunction)))))
       ((zero? (index (car l) 'innerfunction))
        (list (cdr (car l)) (cdr (cadr l))))                    ; if function index 0 return list of sublist 1 and 2

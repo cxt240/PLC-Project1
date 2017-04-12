@@ -177,9 +177,16 @@
   (lambda (stmt stack)
     (cond
       ((eq? 'var (car stmt)) (declare stmt stack))                          ; variable declaration
-      ((eq? '= (car stmt)) (assign (cadr stmt) (cadr (cdr stmt)) stack))    ; assignment operation
+      ((eq? '= (car stmt)) (set (cadr stmt) (caddr stmt) stack))    ; assignment operation
       ((eq? 'return (car stmt)) (return stmt stack))                        ; return statment (creates a return variable, which is filtered in hte interpreter
       (else (error "invalid statement")))))
+
+(define set
+  (lambda (var val stack)
+    (cond
+      ((list? val) (if (eq? (car val) 'funcall) (setVar var (runFunction (cadr val) (cddr val) stack))
+                       (assign var (identify val stack) stack)))
+      (else (assign var val stack)))))
 
 ; Declaring variable (initializes variable to 0 if undeclared)
 (define declare
@@ -201,10 +208,10 @@
     (cond
       ((not (exists? (car stack) var)) (error "Variable not in scope"))                                                            ; variable does not exist
       ((list? val)
-       (if (eq? (car val) 'funcall)
-           (setVar var (runFunction (cadr val) (cddr val) stack))
-           (if (bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var)))
-               (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))))                                      ; if the assignment is to be a function, find the value of the function before changing the value
+       (cond
+         ((bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var))))
+         ((and (list? (car val)) (eq? (caar val) 'throw)) val)
+         (else (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))))                                      ; if the assignment is to be a function, find the value of the function before changing the value
       ((exists? (car stack) var) (if (inScope (car stack) var)
                                      (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))             ; otherwise assign the value
                                      (error "Variable not in scope")))

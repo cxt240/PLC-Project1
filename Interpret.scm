@@ -418,7 +418,7 @@
   (lambda (stmt stack)
     (cond
       ((null? stmt) stack)                                                                            ; null case
-      ((eq? 'throw (car stmt)) (cons stmt stack))                                                     ; throw call
+      ((eq? 'throw (car stmt)) (cons (list 'throw (identify (cadr stmt) stack))  stack))                                                     ; throw call
       ((eq? 'continue (car stmt)) (cons 'continue stack))                                             ; continue call
       ((eq? 'break (car stmt)) (cons 'break stack))                                                   ; break call
       ((eq? 'funcall (car stmt)) (popReturn (runFunction (cadr stmt) (cddr stmt) stack)))             ; function call

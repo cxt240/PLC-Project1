@@ -188,7 +188,7 @@
 (define assign
   (lambda (var val stack)
     (cond
-      ((not (exists? (car stack) var)) (error "Using before declaring"))                                                            ; variable does not exist
+      ((not (exists? (car stack) var)) (error "Variable not in scope"))                                                            ; variable does not exist
       ((list? val) (if (bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var)))
        (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))))                                      ; if the assignment is to be a function, find the value of the function before changing the value
       ((exists? (car stack) var) (if (inScope (car stack) var)

@@ -8,7 +8,7 @@
 ;command issues:
 ;(interpret (parser "filename.txt"))
 
-(load "functionParser.scm")
+(load "classParser.scm")
 (require racket/trace)
 
 ; ----------------------------------------------------------------------------------------------------

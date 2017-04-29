@@ -108,11 +108,27 @@
 ;
 ; ---------------------------------------------------------------------------------------------------
 
-; function initializes a layer 
-(define layer
-  (lambda (l)
+; adds a layer of "var"
+(define addLayer
+  (lambda (var l)
     (cond
-      (else (list (cons 'layer (car l)) (cons 'layer (cadr l)))))))  ; only section: adds a layer to both parts of the stack  
+      (else (list (cons var (car l)) (cons var (cadr l)))))))
+
+; destroys all layers up to the layer containing "var"
+(define destroyLayer
+  (lambda (var l)
+    (cond
+      ((atom? l) l)                                            ; atom ---  if list is an atom, return
+      ((atom? (car l)) (cons (car l) (destroyLayer var (cdr l))))      ; break/continue atom, pop the stack
+      ((eq? 'throw (caar l)) (cons (car l) (destroyLayer var (cdr l)))); throw (it's the first list) pop stack
+      ((eq? 'return (caar l)) (list
+                               (cons 'return (removeX (car l) (index (car l) var)))
+                               (cons (caadr l) (removeX (cadr l) (index (car l) var)))))
+      ((zero? (index (car l) var))
+       (list (cdr (car l)) (cdr (cadr l))))                    ; if layer index 0 return list of sublist 1 and 2
+      (else (list
+             (removeX (car l) (index (car l) var))
+             (removeX (cadr l) (index (car l) var)))))))
 
 ; function removes the xth layer 
 (define removeX
@@ -121,24 +137,6 @@
       ((null? l) '())                              ; null case empty list
       ((zero? x) (cdr l))                          ; no layers left return remaining of list
       (else (removeX (cdr l) (- x 1))))))          ; layers left, recursive call
-
-; function removes the most recent layer
-; (popLayer '((x layer y z) (1 layer 2 3))) --> '((y z) (2 3))
-(define popLayer
-  (lambda (l)
-    (cond
-      ((atom? l) l)                                            ; atom ---  if list is an atom, return
-      ((atom? (car l)) (cons (car l) (popLayer (cdr l))))      ; break/continue atom, pop the stack
-      ((eq? 'throw (caar l)) (cons (car l) (popLayer (cdr l)))); throw (it's the first list) pop stack
-      ((eq? 'return (caar l)) (list
-                               (cons 'return (removeX (car l) (index (car l) 'layer)))
-                               (cons (caadr l) (removeX (cadr l) (index (car l) 'layer)))))
-      ((zero? (index (car l) 'layer))
-       (list (cdr (car l)) (cdr (cadr l))))                    ; if layer index 0 return list of sublist 1 and 2
-      (else (list
-             (removeX (car l) (index (car l) 'layer))
-             (removeX (cadr l) (index (car l) 'layer))))))) ; else return stack with last element in stack removed
-
 
 ; ---------------------------------------------------------------------------------------------------
 ;
@@ -242,7 +240,7 @@
   (lambda (body stack)
     (cond
       ((atom? stack) stack)                                   ; if stack atom return atom
-      (else (popLayer (instr body (layer stack)))))))         ; else pop layer
+      (else (destroyLayer 'layer (instr body (addLayer 'layer stack)))))))         ; else pop layer
 
 ; ------------------------------------------------------------------------------------------------------------
 ;
@@ -266,8 +264,8 @@
                       (call/cc (lambda (cc)
                                  (cond
                                    ((eq? 'throw (caar stack1))                                 ; if something was thrown, add a layer, assign the error (e) the thrown value
-                                    (popLayer (begin body                                           ; run catch body on it
-                                                     (assign x (cadar stack1) (declare (list 'var x) (layer (cdr stack1))))))) 
+                                    (destroyLayer 'layer (begin body                                           ; run catch body on it
+                                                     (assign x (cadar stack1) (declare (list 'var x) (addLayer 'layer (cdr stack1))))))) 
                                    ((null? body) (cc stack1))                                       ; no body, return stack
                                    (else (cc stack1))))))]                                          ; return stack otherwise
              [finally (lambda (body stack1)
@@ -313,49 +311,6 @@
       ((null? field) newStack)                                                ; no more parameters to assign
       (else (paramAssign (cdr field) (cdr param)                              ; next parameter to assign, add current one to stack
                          (list (cons (car field) (car newStack)) (cons (identify (car param) stack) (cadr newStack))) stack)))))
-
-; function initializes the seperator of a normal function call
-(define func
-  (lambda (l)
-    (cond
-      (else (list (cons 'function (car l)) (cons 'function (cadr l)))))))  ; only section: adds the base layer to both parts of the stack
-
-(define popfunc
-  (lambda (l)
-    (cond
-      ((atom? l) l)                                            ; atom ---  if list is an atom, return
-      ((atom? (car l)) (cons (car l) (popfunc (cdr l))))       ; break/continue atom, pop the stack
-      ((eq? 'throw (caar l)) (cons (car l) (popfunc (cdr l)))) ; throw (it's the first list) pop stack
-      ((eq? 'return (caar l)) (list                            ; keeps the return, destroys everything else
-                               (cons 'return (removeX (car l) (index (car l) 'function)))
-                               (cons (caadr l) (removeX (cadr l) (index (car l) 'function)))))
-      ((zero? (index (car l) 'function))
-       (list (cdr (car l)) (cdr (cadr l))))                    ; if function index 0 return list of sublist 1 and 2
-      (else (list
-             (removeX (car l) (index (car l) 'function))
-             (removeX (cadr l) (index (car l) 'function))))))) ; else return stack with last element in stack removed
-
-; function initializes the seperator of an inner function call
-(define inFunc
-  (lambda (l)
-    (cond
-      (else (list (cons 'innerfunction (car l)) (cons 'innerfunction (cadr l)))))))  ; only section: adds the base layer to both parts of the stack
-
-; pops the inner function.
-(define popInner
-  (lambda (l)
-    (cond
-      ((atom? l) l)                                            ; atom ---  if list is an atom, return
-      ((atom? (car l)) (cons (car l) (popInner (cdr l))))       ; break/continue atom, pop the stack
-      ((eq? 'throw (caar l)) (cons (car l) (popInner (cdr l)))) ; throw (it's the first list) pop stack
-      ((eq? 'return (caar l)) (list                            ; keeps the return, destroys everything else
-                               (cons 'return (removeX (car l) (index (car l) 'innerfunction)))
-                               (cons (caadr l) (removeX (cadr l) (index (car l) 'innerfunction)))))
-      ((zero? (index (car l) 'innerfunction))
-       (list (cdr (car l)) (cdr (cadr l))))                    ; if function index 0 return list of sublist 1 and 2
-      (else (list
-             (removeX (car l) (index (car l) 'innerfunction))
-             (removeX (cadr l) (index (car l) 'innerfunction)))))))
     
 ; function call and run
 (define runFunction
@@ -363,11 +318,11 @@
     (cond
       ((not (inScope (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
       ((localScope (car stack) name)
-          (popInner (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))                     ; inner functions
-                           (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (inFunc stack) stack))))
+          (destroyLayer 'innerfunction (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))                     ; inner functions
+                           (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (addLayer 'innerfunction stack) stack))))
       (else (if (eq? (length (car (getValue (cadr stack) (getIndex (car stack) name)))) (length params)) ; if the number of fields are the same as the number of parameters
-                (popfunc (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))               ; run instruction after declaring and assigning values
-                                 (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (func stack) stack)))
+                (destroyLayer 'function (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))               ; run instruction after declaring and assigning values
+                                 (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (addLayer 'function stack) stack)))
                 (error "Entered parameters don't match declared parameters"))))))
 
 ; ------------------------------------------------------------------------------------------------------------
@@ -379,23 +334,17 @@
 ; main interpreter function, runs all instructions
 (define interpret
   (lambda (l)
-    (method l (layer '(() ())))))
+    (method l (addLayer 'layer '(() ())))))
 
 ; parses the file and adds fields to the stack and sends it to the main method handler
 (define method
   (lambda (l stack)
-    (main (funcFilter l (base stack)))))
-
-; function initializes the bottom of the stack
-(define base
-  (lambda (l)
-    (cond
-      (else (list (cons 'base (car l)) (cons 'base (cadr l)))))))  ; only section: adds the base layer to both parts of the stack
+    (main (funcFilter l (addLayer 'base stack)))))
 
 ; runs the main method
 (define main
   (lambda (stack)
-    (if (exists? (car stack) 'main) (run (cadr (getValue (cadr stack) (getIndex (car stack) 'main))) (func stack)) ; checks if the main method exists
+    (if (exists? (car stack) 'main) (run (cadr (getValue (cadr stack) (getIndex (car stack) 'main))) (addLayer 'function stack)) ; checks if the main method exists
         (error "no main method"))))
 
 ; process return from main function interpret

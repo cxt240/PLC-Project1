@@ -325,6 +325,39 @@
                                  (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (addLayer 'function stack) stack)))
                 (error "Entered parameters don't match declared parameters"))))))
 
+; -------------------------------------------------------------------------------------------
+;
+; Class and object stuff (Kavan)
+;
+;--------------------------------------------------------------------------------------------
+
+
+; get instructions from main class (Kavan)
+(define getClassMethods
+  (lambda (class l)
+    (cond
+      ((null? l) '())                                   ;no class of such 
+      ((eq? class (car(cdr(car l))) )   (cdr(cdr(car l))) )          ; class stuff has the desired class name
+      (else (addMainClass class (cdr l)))               ; try again with other class
+    )
+  )
+)
+
+
+
+; if there is extends then add functions to the stack (except main). Assuming result from addMainClass passed here
+; (addExtends '(extends B) (parse "file" "class"))
+;(define addExtends
+;  (lambda (extendedClass )
+;    (cond
+;      ( (eq? 'extends (car (car l))) (addMainClass (cdr (car l))) ()  )
+;    )
+;  )
+;)
+
+; check if (ex B extends A) A.method exists in B.method. If so, remove
+
+
 ; ------------------------------------------------------------------------------------------------------------
 ;
 ; Main interpreter

@@ -350,6 +350,7 @@
     ((null? (car class)) (addMethods (cadr class) stack))
     (else (extend (getValue (cadr stack) (index (car stack) (cadar l))) (addMethods (cadr class) stack))))))
 
+; helper method for extend, add anything in B that doesn't exist in A yet
 (define addMethods
   (lambda (methods stack)
     (cond
@@ -358,7 +359,8 @@
     ((eq? (caar methods) 'var) (addMethods (cdr methods) (declare (cadar methods) stack)))
     ((eq? (caar methods) 'function) (addMethods (cdr methods) (list (cons (cadar methods) (car stack)) (cons (cddar methods) (cadr stack)))))
     (else (error "invalid entry")))))
-    
+
+; helper method for interpret, formats raw parse to be added to stack
 (define parseClass
   (lambda (l stack)
     (cond

@@ -451,7 +451,7 @@
 
 (define getClassValue
   (lambda (var stack)
-    ((getValue (cadr stack) (index (car stack) var)))))
+    (getValue (cadr stack) (index (car stack) var))))
 
 ;runs arithmetic operation based on sign
 (define identify

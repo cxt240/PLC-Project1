@@ -209,11 +209,16 @@
        (cond
          ((bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var))))
          ((and (list? (car val)) (eq? (caar val) 'throw)) val)
+         ((eq? (car val) 'new) (setValue (cadr stack) (newStack (cadr val) stack) (getIndex (car stack) var)))
          (else (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))))                                      ; if the assignment is to be a function, find the value of the function before changing the value
       ((exists? (car stack) var) (if (inScope (car stack) var)
                                      (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))             ; otherwise assign the value
                                      (error "Variable not in scope")))
-      (else (error '(invalid variable))))))                                                                                              ; else throw an error     
+      (else (error '(invalid variable))))))                                                                                              ; else throw an error
+
+(define newStack
+  (lambda (var stack)
+    (funcFilter (getValue (cadr stack) (index (car stack) a)) '(() ()))))
 
 ; ------------------------------------------------------------------------------------------------------------
 ;
@@ -330,33 +335,6 @@
 ; Class and object stuff
 ;
 ;--------------------------------------------------------------------------------------------
-
-
-; get instructions from main class (Kavan)
-(define getClassMethods
-  (lambda (class l)
-    (cond
-      ((null? l) '())                                   ;no class of such 
-      ((eq? class (car(cdr(car l))) )   (cdr(cdr(car l))) )          ; class stuff has the desired class name
-      (else (addMainClass class (cdr l)))               ; try again with other class
-    )
-  )
-)
-
-
-
-; if there is extends then add functions to the stack (except main). Assuming result from addMainClass passed here
-; (addExtends '(extends B) (parse "file" "class"))
-;(define addExtends
-;  (lambda (extendedClass )
-;    (cond
-;      ( (eq? 'extends (car (car l))) (addMainClass (cdr (car l))) ()  )
-;    )
-;  )
-;)
-
-; check if (ex B extends A) A.method exists in B.method. If so, remove
-
 (define classMethods
   (lambda (l stack)
     (cond
@@ -397,9 +375,8 @@
 (define runClass
   (lambda (a stack)
     (cond
-    ((exists? (car stack) a) (classMethods (getValue (cadr stack) (index (car stack) a)) stack))
+    ((exists? (car stack) a) (main (classMethods (getValue (cadr stack) (index (car stack) a)) stack)))
     (else (error "help")))))
-
 
 ; parses the file and adds fields to the stack and sends it to the main method handler
 (define method

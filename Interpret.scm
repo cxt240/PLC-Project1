@@ -335,12 +335,15 @@
 ; Class and object stuff
 ;
 ;--------------------------------------------------------------------------------------------
+
+; adds methods to stack of desired class
 (define classMethods
   (lambda (l stack)
     (cond
     ((null? (car l)) (funcFilter (cadr l) stack))
     (else (extend (getValue (cadr stack) (index (car stack) (cadar l))) (funcFilter (cadr l) stack))))))
 
+; adds methods to stack from class (class A extends B) that are not in A
 (define extend
   (lambda (class stack)
     (cond

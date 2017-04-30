@@ -209,7 +209,7 @@
        (cond
          ((bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var))))
          ((and (list? (car val)) (eq? (caar val) 'throw)) val)
-         ((eq? (car val) 'new) (setValue (cadr stack) (newStack (cadr val) stack) (getIndex (car stack) var)))
+         ((eq? (car val) 'new) (list (car stack) (setValue (cadr stack) (newStack (cadr val) stack) (getIndex (car stack) var))))
          (else (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))))                                      ; if the assignment is to be a function, find the value of the function before changing the value
       ((exists? (car stack) var) (if (inScope (car stack) var)
                                      (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))             ; otherwise assign the value
@@ -348,7 +348,7 @@
   (lambda (class stack)
     (cond
     ((null? (car class)) (addMethods (cadr class) stack))
-    (else (extend (getValue (cadr stack) (index (car stack) (cadar l))) (addMethods (cadr class) stack))))))
+    (else (extend (getValue (cadr stack) (index (car stack) (cadar class))) (addMethods (cadr class) stack))))))
 
 ; helper method for extend, add anything in B that doesn't exist in A yet
 (define addMethods
@@ -459,7 +459,7 @@
     (cond
       ((or (null? stmt)) '() )
       ((atom? stmt) (check stmt stack))
-      ((and (list? stmt) (eq? (car stmt) 'dot)) (getClassValue (caddr l) (getValue (cadr stack) (index (car stack) (cadr l)))))
+      ((and (list? stmt) (eq? (car stmt) 'dot)) (getClassValue (caddr stmt) (getValue (cadr stack) (index (car stack) (cadr stmt)))))
       ((valid-op (car stmt))
        (cond
          ((eq? (car stmt) '-)

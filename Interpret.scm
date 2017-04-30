@@ -218,7 +218,7 @@
 
 (define newStack
   (lambda (var stack)
-    (funcFilter (getValue (cadr stack) (index (car stack) a)) '(() ()))))
+    (classMethods (getValue (cadr stack) (index (car stack) var)) '(() ()))))
 
 ; ------------------------------------------------------------------------------------------------------------
 ;
@@ -447,12 +447,17 @@
         (eq? op '/)          ; division
         (eq? op '%))))       ; modulus
 
+(define getClassValue
+  (lambda (var stack)
+    ((getValue (cadr stack) (index (car stack) var)))))
+
 ;runs arithmetic operation based on sign
 (define identify
   (lambda (stmt stack)  ; car stmt is op
     (cond
       ((or (null? stmt)) '() )
       ((atom? stmt) (check stmt stack))
+      ((and (list? stmt) (eq? (car stmt) 'dot)) (getClassValue (caddr l) (getValue (cadr stack) (index (car stack) (cadr l)))))
       ((valid-op (car stmt))
        (cond
          ((eq? (car stmt) '-)

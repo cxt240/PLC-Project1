@@ -359,21 +359,24 @@
 
 (define classMethods
   (lambda (l stack)
+    (cond
     ((null? (car l)) (funcFilter (cadr l) stack))
-    (else (extend (getValue (cadr stack) (index (car stack) (cadar l))) (funcFilter (cadr l) stack)))))
+    (else (extend (getValue (cadr stack) (index (car stack) (cadar l))) (funcFilter (cadr l) stack))))))
 
 (define extend
   (lambda (class stack)
+    (cond
     ((null? (car class)) (addMethods (cadr class) stack))
-    (else (extend (getValue (cadr stack) (index (car stack) (cadar l))) (addMethods (cadr class) stack)))))
+    (else (extend (getValue (cadr stack) (index (car stack) (cadar l))) (addMethods (cadr class) stack))))))
 
 (define addMethods
   (lambda (methods stack)
+    (cond
     ((null? methods) stack)
     ((exists? (car stack) (cadar method)) (addMethods (cdr methods) stack))
     ((eq? (caar methods) 'var) (addMethods (cdr methods) (declare (cadar methods) stack)))
     ((eq? (caar methods) 'function) (addMethods (cdr methods) (list (cons (cadar methods) (car stack)) (cons (cddar methods) (cadr stack)))))
-    (else (error "invalid entry"))))
+    (else (error "invalid entry")))))
     
 (define parseClass
   (lambda (l stack)
@@ -389,12 +392,13 @@
 ; main interpreter function, runs the main method of class named "a"
 (define interpret
   (lambda (l a)
-    (runClass 'a (addLayer 'class (parseClass l (addLayer 'class '(() ())))))))
+    (runClass a (addLayer 'class (parseClass l (addLayer 'class '(() ())))))))
 
 (define runClass
   (lambda (a stack)
+    (cond
     ((exists? (car stack) a) (classMethods (getValue (cadr stack) (index (car stack) a)) stack))
-    (else (error "help"))))
+    (else (error "help")))))
 
 
 ; parses the file and adds fields to the stack and sends it to the main method handler

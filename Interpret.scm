@@ -90,7 +90,7 @@
   (lambda (l x)
     (cond
       ((zero? x)
-       (if (eq? 'null (car l))
+       (if (and (atom? (car l)) (eq? 'null (car l)))
            (error "Using before assigning") (car l)))  ; if index is zero, return the character
       (else (getValue (cdr l) (- x 1))))))             ; recursive call with index - 1 and cdr of list
 
@@ -327,7 +327,7 @@
 
 ; -------------------------------------------------------------------------------------------
 ;
-; Class and object stuff (Kavan)
+; Class and object stuff
 ;
 ;--------------------------------------------------------------------------------------------
 
@@ -357,17 +357,45 @@
 
 ; check if (ex B extends A) A.method exists in B.method. If so, remove
 
+(define classMethods
+  (lambda (l stack)
+    ((null? (car l)) (funcFilter (cadr l) stack))
+    (else (extend (getValue (cadr stack) (index (car stack) (cadar l))) (funcFilter (cadr l) stack)))))
 
+(define extend
+  (lambda (class stack)
+    ((null? (car class)) (addMethods (cadr class) stack))
+    (else (extend (getValue (cadr stack) (index (car stack) (cadar l))) (addMethods (cadr class) stack)))))
+
+(define addMethods
+  (lambda (methods stack)
+    ((null? methods) stack)
+    ((exists? (car stack) (cadar method)) (addMethods (cdr methods) stack))
+    ((eq? (caar methods) 'var) (addMethods (cdr methods) (declare (cadar methods) stack)))
+    ((eq? (caar methods) 'function) (addMethods (cdr methods) (list (cons (cadar methods) (car stack)) (cons (cddar methods) (cadr stack)))))
+    (else (error "invalid entry"))))
+    
+(define parseClass
+  (lambda (l stack)
+    (cond
+      ((null? l) stack)
+      (else (parseClass (cdr l) (list (cons (cadar l) (car stack)) (cons (cddar l) (car stack))))))))
 ; ------------------------------------------------------------------------------------------------------------
 ;
 ; Main interpreter
 ;
 ; ------------------------------------------------------------------------------------------------------------
 
-; main interpreter function, runs all instructions
+; main interpreter function, runs the main method of class named "a"
 (define interpret
-  (lambda (l)
-    (method l (addLayer 'layer '(() ())))))
+  (lambda (l a)
+    (runClass 'a (addLayer 'class (parseClass l (addLayer 'class '(() ())))))))
+
+(define runClass
+  (lambda (a stack)
+    ((exists? (car stack) a) (classMethods (getValue (cadr stack) (index (car stack) a)) stack))
+    (else (error "help"))))
+
 
 ; parses the file and adds fields to the stack and sends it to the main method handler
 (define method

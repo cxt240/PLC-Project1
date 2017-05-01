@@ -322,8 +322,7 @@
   (lambda (name params stack)
     (cond
       ((list? name) (destroyLayer 'function
-                                  (dotFunction (getClassValue (caddr name) (getValue (cadr stack) (index (car stack) (cadr name))))
-                                               params (addLayer 'function stack))))
+                                  (dotFunction (cadr name) (caddr name) params (getValue (cadr stack) (index (car stack) (cadr name))) stack )))
       ((not (inScope (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
       ((localScope (car stack) name)
           (destroyLayer 'innerfunction (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))                     ; inner functions
@@ -333,9 +332,21 @@
                                  (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (addLayer 'function stack) stack)))
                 (error "Entered parameters don't match declared parameters"))))))
 
+;(define dotFunction
+ ; (lambda (function params stack)
+  ;  (instr (cadr function) (paramAssign (car function) params stack stack))))
+
 (define dotFunction
-  (lambda (function params stack)
-    (instr (cadr function) (paramAssign (car function) params stack stack))))
+  (lambda (objName funcName params objStack stack)
+    (returnCheck objName (destroyLayer 'function
+                               (instr (cadr (getValue (cadr objStack) (getIndex (car objStack) funcName)))
+                                       (paramAssign (car (getValue (cadr objStack) (getIndex (car objStack) funcName))) params (addLayer 'function objStack) stack))) stack)))
+
+(define returnCheck
+  (lambda (objName resStack stack)
+    (cond
+      ((eq? (caar resStack) 'return) (caadr stack))
+      (else (assign obj resStack stack)))))
 
 ; -------------------------------------------------------------------------------------------
 ;

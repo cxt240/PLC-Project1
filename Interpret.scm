@@ -321,6 +321,9 @@
 (define runFunction
   (lambda (name params stack)
     (cond
+      ((list? name) (destroyLayer 'function
+                                  (dotFunction (getClassValue (caddr name) (getValue (cadr stack) (index (car stack) (cadr name))))
+                                               params (addLayer 'function stack))))
       ((not (inScope (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
       ((localScope (car stack) name)
           (destroyLayer 'innerfunction (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))                     ; inner functions
@@ -329,6 +332,10 @@
                 (destroyLayer 'function (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))               ; run instruction after declaring and assigning values
                                  (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (addLayer 'function stack) stack)))
                 (error "Entered parameters don't match declared parameters"))))))
+
+(define dotFunction
+  (lambda (function params stack)
+    (instr (cadr function) (paramAssign (car function) params stack stack))))
 
 ; -------------------------------------------------------------------------------------------
 ;

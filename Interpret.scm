@@ -345,7 +345,7 @@
 (define returnCheck
   (lambda (objName resStack stack)
     (cond
-      ((eq? (caar resStack) 'return) (caadr stack))
+      ((eq? (caar resStack) 'return) (list (cons 'return (car stack)) (cons (caadr resStack) (cadr stack))))
       (else (assign obj resStack stack)))))
 
 ; -------------------------------------------------------------------------------------------

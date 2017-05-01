@@ -210,7 +210,8 @@
          ((bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var))))
          ((and (list? (car val)) (eq? (caar val) 'throw)) val)
          ((eq? (car val) 'new) (list (car stack) (setValue (cadr stack) (newStack (cadr val) stack) (getIndex (car stack) var))))
-         (else (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))))                                      ; if the assignment is to be a function, find the value of the function before changing the value
+         ((valid-op (car val)) (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))         ; if the assignment is to be a function, find the value of the function before changing the value
+         (else (list (car stack) (setValue (cadr stack) val (getIndex (car stack) var))))))
       ((exists? (car stack) var) (if (inScope (car stack) var)
                                      (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))             ; otherwise assign the value
                                      (error "Variable not in scope")))

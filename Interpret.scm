@@ -303,7 +303,8 @@
 
 (define popReturn
   (lambda (stack)
-    (if (exists? (car stack) 'function) (list (cdar stack) (cdadr stack)) stack)))
+    (if (exists? (car stack) 'function) (if (exists? (car stack) 'return) (list (cdar stack) (cdadr stack)) stack)
+        stack)))
 
 (define getReturn
   (lambda (stack)
@@ -342,9 +343,6 @@
                                  (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (addLayer 'function stack) stack)))
                 (error "Entered parameters don't match declared parameters"))))))
 
-;(define dotFunction
- ; (lambda (function params stack)
-  ;  (instr (cadr function) (paramAssign (car function) params stack stack))))
 
 (define dotFunction
   (lambda (objName funcName params objStack stack)

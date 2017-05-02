@@ -485,7 +485,9 @@
     (cond
       ((or (null? stmt)) '() )
       ((atom? stmt) (check stmt stack))
-      ((and (list? stmt) (eq? (car stmt) 'dot)) (getClassValue (caddr stmt) (getValue (cadr stack) (index (car stack) (cadr stmt)))))
+      ((and (list? stmt) (eq? (car stmt) 'dot)) (getClassValue (caddr stmt)
+                                                               (if (eq? (cadr stmt) 'this) (list (suffix 'function (car stack)) (suffix 'function (cadr stack)))
+                                                                   (getValue (cadr stack) (index (car stack) (cadr stmt))))))
       ((valid-op (car stmt))
        (cond
          ((eq? (car stmt) '-)

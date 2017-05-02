@@ -332,8 +332,7 @@
 (define runFunction
   (lambda (name params stack)
     (cond
-      ((list? name) (destroyLayer 'function
-                                  (dotFunction (cadr name) (caddr name) params (getValue (cadr stack) (index (car stack) (cadr name))) stack )))
+      ((list? name) (dotFunction (cadr name) (caddr name) params (getValue (cadr stack) (index (car stack) (cadr name))) stack ))
       ((not (inScope (car stack) name)) (error "Function not declared"))                                 ; function doesn't exist, throw an error
       ((localScope (car stack) name)
           (destroyLayer 'innerfunction (instr (cadr (getValue (cadr stack) (getIndex (car stack) name)))                     ; inner functions

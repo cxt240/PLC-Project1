@@ -204,16 +204,17 @@
 (define assign
   (lambda (var val stack)
     (cond
+      ((list? var) (thisVar var (identify val stack) stack))
       ((not (exists? (car stack) var)) (error "Variable not in scope"))                                                            ; variable does not exist
       ((list? val)
        (cond
-         ((bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (thisVar var stack))))
+         ((bool-op (car val)) (list (car stack) (setValue (cadr stack) (compound val stack) (getIndex (car stack) var))))
          ((and (list? (car val)) (eq? (caar val) 'throw)) val)
-         ((eq? (car val) 'new) (list (car stack) (setValue (cadr stack) (newStack (cadr val) stack) (thisVar var stack))))
-         ((valid-op (car val)) (list (car stack) (setValue (cadr stack) (identify val stack) (thisVar var stack))))         ; if the assignment is to be a function, find the value of the function before changing the value
-         (else (list (car stack) (setValue (cadr stack) val (thisVar var stack))))))
+         ((eq? (car val) 'new) (list (car stack) (setValue (cadr stack) (newStack (cadr val) stack) (getIndex (car stack) var))))
+         ((valid-op (car val)) (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var))))         ; if the assignment is to be a function, find the value of the function before changing the value
+         (else (list (car stack) (setValue (cadr stack) val (getIndex (car stack) var))))))
       ((exists? (car stack) var) (if (inScope (car stack) var)
-                                     (list (car stack) (setValue (cadr stack) (identify val stack) (thisVar var stack)))             ; otherwise assign the value
+                                     (list (car stack) (setValue (cadr stack) (identify val stack) (getIndex (car stack) var)))             ; otherwise assign the value
                                      (error "Variable not in scope")))
       (else (error '(invalid variable))))))                                                                                              ; else throw an error
 
@@ -221,12 +222,14 @@
   (lambda (var stack)
     (classMethods (getValue (cadr stack) (index (car stack) var)) '(() ()))))
 
-; get this.x if needed
+; get this.x assign
 (define thisVar
-  (lambda (var stack)
+  (lambda (var val stack)
     (cond
-      ((atom? var) (getIndex (car stack) var))
-      (else (+ (index (suffix 'function (car stack)) (caddr var)) (- (length l) (length (suffix 'function (car stack)))))))))
+      ((eq? (cadr var) 'this) (list (car stack)
+                                    (setValue (cadr stack) val
+                                              (+ (index (suffix 'function (car stack)) (caddr var)) (- (length (car stack)) (length (suffix 'function (car stack))))))))
+      (else (error "unknown var")))))
 
 ; ------------------------------------------------------------------------------------------------------------
 ;
@@ -354,7 +357,7 @@
   (lambda (objName resStack stack)
     (cond
       ((eq? (caar resStack) 'return) (list (cons 'return (car stack)) (cons (caadr resStack) (cadr stack))))
-      (else (assign obj resStack stack)))))
+      (else (assign objName resStack stack)))))
 
 ; -------------------------------------------------------------------------------------------
 ;

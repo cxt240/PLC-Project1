@@ -401,7 +401,7 @@
 ; main interpreter function, runs the main method of class named "a"
 (define interpret
   (lambda (l a)
-    (runClass a (addLayer 'class (parseClass l (addLayer 'class '(() ())))))))
+    (runClass a (addLayer 'class (parseClass (parser l) (addLayer 'class '(() ())))))))
 
 (define runClass
   (lambda (a stack)

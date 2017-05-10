@@ -301,11 +301,13 @@
 ;
 ; ------------------------------------------------------------------------------------------------------------
 
+;pops return value from stack
 (define popReturn
   (lambda (stack)
     (if (exists? (car stack) 'function) (if (exists? (car stack) 'return) (list (cdar stack) (cdadr stack)) stack)
         stack)))
 
+;gets return value requested
 (define getReturn
   (lambda (stack)
     (cond
@@ -343,13 +345,15 @@
                                  (paramAssign (car (getValue (cadr stack) (getIndex (car stack) name))) params (addLayer 'function stack) stack)))
                 (error "Entered parameters don't match declared parameters"))))))
 
-
+;returns the requested function within the object chosen
+;does a dot call on funcName with given parameters
 (define dotFunction
   (lambda (objName funcName params objStack stack)
     (returnCheck objName (destroyLayer 'function
                                (instr (cadr (getValue (cadr objStack) (getIndex (car objStack) funcName)))
                                        (paramAssign (car (getValue (cadr objStack) (getIndex (car objStack) funcName))) params (addLayer 'function objStack) stack))) stack)))
-
+;check if theres a return
+;if needs return, returns requested value of stack, otherwise nothing
 (define returnCheck
   (lambda (objName resStack stack)
     (cond
